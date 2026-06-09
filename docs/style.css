@@ -1,0 +1,25 @@
+@page { size: A4; margin: 18mm 15mm; }
+body {
+  font-family: "Microsoft YaHei","微软雅黑","SimSun",sans-serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  color: #222;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+h1 { font-size: 22pt; color:#0D47A1; border-bottom: 2px solid #0D47A1; padding-bottom: 6px; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 16pt; color:#1565C0; border-bottom: 1px solid #90CAF9; padding-bottom: 4px; margin-top: 22px; }
+h3 { font-size: 13pt; color:#1976D2; margin-top: 16px; }
+h4 { font-size: 11.5pt; color:#37474F; margin-top: 12px; }
+p, li { font-size: 11pt; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 10pt; page-break-inside: avoid; }
+th, td { border: 1px solid #B0BEC5; padding: 5px 8px; vertical-align: top; text-align: left; }
+th { background: #E3F2FD; color: #0D47A1; font-weight: 600; }
+code { font-family: "Consolas","Courier New",monospace; background: #ECEFF1; padding: 1px 4px; border-radius: 3px; font-size: 10pt; }
+pre { background: #263238; color: #ECEFF1; padding: 10px 12px; border-radius: 4px; overflow-x: auto; font-size: 9.5pt; page-break-inside: avoid; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #1E88E5; background: #F1F8E9; margin: 10px 0; padding: 6px 12px; color: #33691E; }
+ul, ol { padding-left: 22px; }
+hr { border: none; border-top: 1px solid #CFD8DC; margin: 20px 0; }

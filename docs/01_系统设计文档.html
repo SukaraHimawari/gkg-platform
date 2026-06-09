@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>GKG 系统设计文档</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">GKG 系统设计文档</h1>
+</header>
+<h1
+id="全球新闻语义分析与主题追踪平台">全球新闻语义分析与主题追踪平台</h1>
+<h2 id="系统设计文档">系统设计文档</h2>
+<table>
+<thead>
+<tr>
+<th>项目名称</th>
+<th>GKG 全球新闻语义分析与主题追踪平台</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>课程名称</td>
+<td>Java 程序设计</td>
+</tr>
+<tr>
+<td>团队规模</td>
+<td>2 人</td>
+</tr>
+<tr>
+<td>技术栈</td>
+<td>Java 17 + Swing + SQLite + JFreeChart + Weka</td>
+</tr>
+<tr>
+<td>文档版本</td>
+<td>v1.0</td>
+</tr>
+<tr>
+<td>编写日期</td>
+<td>2026-06-09</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="一需求分析">一、需求分析</h2>
+<h3 id="项目背景">1.1 项目背景</h3>
+<p>GDELT 2.0 Knowledge Graph（GKG）每 15
+分钟从全球新闻媒体中自动抽取人物、组织、地点、主题、情感、引语、行为等结构化信息。本项目基于一段时间（建议
+1~7 天）的 GKG 数据，开发一套 Java
+桌面应用，对外提供数据导入、语义查询、共现网络、主题追踪、情感与聚类分析、可视化展示等能力，帮助用户快速回答”谁在什么时候因为什么被报道、情感倾向如何”等问题。</p>
+<h3 id="功能需求">1.2 功能需求</h3>
+<h4 id="功能清单覆盖任务书必做项-17-项-选做-2-项">1.2.1
+功能清单（覆盖任务书必做项 17 项 + 选做 2 项）</h4>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>编号</th>
+<th>功能</th>
+<th>优先级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据管理</td>
+<td>F-01</td>
+<td>GKG CSV/TSV 单/批导入，含进度条</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>数据管理</td>
+<td>F-02</td>
+<td>关系型表存储人物/组织/主题/情感/地点/引语</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>数据管理</td>
+<td>F-03</td>
+<td>空值/重复/无效主题清理</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>数据管理</td>
+<td>F-04</td>
+<td>查询/分析结果导出 CSV/Excel/JSON</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>查询检索</td>
+<td>F-06</td>
+<td>日期+主题+人物+组织+地点组合查询</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>查询检索</td>
+<td>F-07</td>
+<td>人物档案查询（频次、关联、情感）</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>查询检索</td>
+<td>F-08</td>
+<td>组织档案查询</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>查询检索</td>
+<td>F-09</td>
+<td>主题追踪（时间分布+情感变化）</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>挖掘分析</td>
+<td>F-12</td>
+<td>人物-人物 / 人物-组织 共现网络</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>挖掘分析</td>
+<td>F-13</td>
+<td>PageRank 识别焦点人物</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>挖掘分析</td>
+<td>F-14</td>
+<td>主题热度排行（日/周/月）</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>挖掘分析</td>
+<td>F-15</td>
+<td>TF-IDF + K-Means 主题聚类</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>挖掘分析</td>
+<td>F-16</td>
+<td>V2Tone 情感趋势与拐点</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>可视化</td>
+<td>F-20</td>
+<td>共现网络图（节点大小=PageRank）</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>可视化</td>
+<td>F-21</td>
+<td>主题趋势折线图</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>可视化</td>
+<td>F-22</td>
+<td>主题×月份热力图</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>可视化</td>
+<td>F-23</td>
+<td>情感仪表盘 / 雷达图</td>
+<td>必做</td>
+</tr>
+<tr>
+<td>选做</td>
+<td>F-10</td>
+<td>名称模糊搜索 + 自动补全</td>
+<td>选做（计划完成）</td>
+</tr>
+<tr>
+<td>选做</td>
+<td>F-24</td>
+<td>引语展示墙（情感着色）</td>
+<td>选做（计划完成）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="用例图文字描述">1.2.2 用例图（文字描述）</h4>
+<pre><code>                       ┌───────────────────────────┐
+                       │  GKG 新闻语义分析平台      │
+                       │                           │
+   ┌────────┐          │  ① 导入 GKG 数据          │
+   │        │ ───────► │  ② 数据清理与导出         │
+   │ 普通   │          │  ③ 组合条件查询           │
+   │ 分析   │ ───────► │  ④ 查询人物/组织档案      │
+   │ 用户   │          │  ⑤ 追踪主题时间分布       │
+   │ (Actor)│ ───────► │  ⑥ 构建共现网络 / PageRank│
+   │        │          │  ⑦ 主题热度排行 / 聚类    │
+   │        │ ───────► │  ⑧ 情感趋势分析           │
+   │        │          │  ⑨ 可视化展示             │
+   └────────┘          │  ⑩ 结果导出 CSV/Excel/JSON│
+                       └───────────────────────────┘
+
+主用例之间的关系：
+  ③ ④ ⑤  «include»  ① （查询/档案都依赖数据已入库）
+  ⑥ ⑦ ⑧  «include»  ①
+  ⑨       «include»  ⑥ ⑦ ⑧
+  ⑩       «extend»   ③ ④ ⑤ ⑦ ⑧（任意结果界面可触发导出）</code></pre>
+<h3 id="非功能需求">1.3 非功能需求</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>编号</th>
+<th>维度</th>
+<th>指标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NF-01</td>
+<td>性能</td>
+<td>5 万条 GKG 数据导入 ≤ 3 min（批量事务 + 预编译）；查询响应 ≤ 3
+s；网络图渲染 ≤ 5 s</td>
+</tr>
+<tr>
+<td>NF-02</td>
+<td>兼容性</td>
+<td>Windows 10/11 + JRE 17+，单 JAR 直接运行，免安装</td>
+</tr>
+<tr>
+<td>NF-03</td>
+<td>可用性</td>
+<td>主操作有进度反馈，错误有明确弹窗提示；首次启动自动创建数据库</td>
+</tr>
+<tr>
+<td>NF-04</td>
+<td>健壮性</td>
+<td>异常行（字段缺失、分隔符错乱）跳过并写入
+<code>import_error.log</code>，不中断主流程</td>
+</tr>
+<tr>
+<td>NF-05</td>
+<td>可扩展性</td>
+<td>严格 MVC 三层 + DAO/Service/Controller/View
+包；新增图表或查询条件仅需扩展 Service + UI</td>
+</tr>
+<tr>
+<td>NF-06</td>
+<td>代码规范</td>
+<td>包/类/方法符合 Google Java Style；核心方法 JavaDoc 注释</td>
+</tr>
+<tr>
+<td>NF-07</td>
+<td>安全性</td>
+<td>所有 SQL 使用 <code>PreparedStatement</code>，防 SQL 注入</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="二架构设计">二、架构设计</h2>
+<h3 id="技术栈选型">2.1 技术栈选型</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>层次</th>
+<th>选型</th>
+<th>选择理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>语言 / JDK</td>
+<td>Java 17 (LTS)</td>
+<td>任务书强制要求，长期支持</td>
+</tr>
+<tr>
+<td>构建工具</td>
+<td>Maven 3.9</td>
+<td>依赖管理 + <code>maven-shade-plugin</code> 一键打 fat-jar</td>
+</tr>
+<tr>
+<td>GUI 框架</td>
+<td>Swing + FlatLaf</td>
+<td>无模块化打包问题；FlatLaf 提供现代外观</td>
+</tr>
+<tr>
+<td>数据库</td>
+<td>SQLite 3 (<code>xerial sqlite-jdbc</code>)</td>
+<td>单文件、零部署、嵌入式</td>
+</tr>
+<tr>
+<td>连接池</td>
+<td>HikariCP</td>
+<td>高性能；导入时复用连接</td>
+</tr>
+<tr>
+<td>CSV/TSV 解析</td>
+<td>OpenCSV</td>
+<td>支持自定义分隔符（<code>\t</code>）</td>
+</tr>
+<tr>
+<td>图表</td>
+<td>JFreeChart</td>
+<td>折线图、柱状图、热力图、仪表盘均原生支持</td>
+</tr>
+<tr>
+<td>网络图</td>
+<td>自绘 <code>JPanel</code> + 力导向布局；算法用 JUNG</td>
+<td>既显示又能跑 PageRank</td>
+</tr>
+<tr>
+<td>文本挖掘</td>
+<td>Weka 3.8（<code>StringToWordVector</code> +
+<code>SimpleKMeans</code>）</td>
+<td>现成 TF-IDF 与 K-Means</td>
+</tr>
+<tr>
+<td>Excel/JSON</td>
+<td>Apache POI 5 + Jackson 2</td>
+<td>业界标准</td>
+</tr>
+<tr>
+<td>日志</td>
+<td>SLF4J + Logback</td>
+<td>异常排查方便</td>
+</tr>
+<tr>
+<td>测试</td>
+<td>JUnit 5</td>
+<td>仅对解析与算法做单元测试</td>
+</tr>
+</tbody>
+</table>
+<h3 id="系统体系结构mvc-三层">2.2 系统体系结构（MVC 三层）</h3>
+<pre><code>┌───────────────────────────────────────────────────────────────┐
+│                       View 层（Swing UI）                     │
+│   MainFrame  ImportPanel  QueryPanel  AnalysisPanel  ChartPanel│
+└──────────────────────────▲────────────────────────────────────┘
+                           │ ActionEvent / 回调
+┌──────────────────────────┴────────────────────────────────────┐
+│              Controller 层（事件协调、参数校验）              │
+│   ImportController  QueryController  AnalysisController       │
+└──────────────────────────▲────────────────────────────────────┘
+                           │ 调用业务方法
+┌──────────────────────────┴────────────────────────────────────┐
+│                 Service 层（业务逻辑）                        │
+│   ImportService  QueryService  AnalysisService  ExportService │
+└──────────────────────────▲────────────────────────────────────┘
+                           │ DAO 接口
+┌──────────────────────────┴────────────────────────────────────┐
+│                   DAO 层（持久化 / JDBC）                     │
+│   GkgRecordDao  PersonDao  OrgDao  ThemeDao  LocationDao ...  │
+└──────────────────────────▲────────────────────────────────────┘
+                           │ JDBC / HikariCP
+                  ┌────────┴────────┐
+                  │  SQLite (gkg.db) │
+                  └─────────────────┘</code></pre>
+<h3 id="项目包结构">2.3 项目包结构</h3>
+<pre><code>gkg-platform/
+├── pom.xml
+├── README.md
+├── data/                            # 示例 GKG 数据（已解压 .csv）
+├── db/                              # 运行时生成的 gkg.db（gitignore）
+├── logs/
+└── src/main/
+    ├── java/edu/gkg/
+    │   ├── App.java                 # 程序入口（main）
+    │   ├── common/
+    │   │   ├── DbHelper.java        # HikariCP 数据源、建表 SQL
+    │   │   ├── AppConfig.java       # 读取 config.properties
+    │   │   └── Constants.java
+    │   ├── model/                   # 实体类（POJO）
+    │   │   ├── GkgRecord.java
+    │   │   ├── Person.java
+    │   │   ├── Organization.java
+    │   │   ├── Theme.java
+    │   │   ├── Location.java
+    │   │   ├── Quote.java
+    │   │   ├── ToneScore.java
+    │   │   └── CooccurEdge.java
+    │   ├── dao/
+    │   │   ├── GkgRecordDao.java
+    │   │   ├── PersonDao.java
+    │   │   ├── OrganizationDao.java
+    │   │   ├── ThemeDao.java
+    │   │   ├── LocationDao.java
+    │   │   └── QuoteDao.java
+    │   ├── service/
+    │   │   ├── ImportService.java   # F-01,F-02,F-03,F-05
+    │   │   ├── QueryService.java    # F-06,F-07,F-08,F-09,F-10
+    │   │   ├── AnalysisService.java # F-12,F-13,F-14,F-15,F-16
+    │   │   └── ExportService.java   # F-04
+    │   ├── algorithm/
+    │   │   ├── CooccurrenceBuilder.java   # F-12
+    │   │   ├── PageRankRunner.java        # F-13（基于 JUNG）
+    │   │   ├── ThemeRanker.java           # F-14
+    │   │   ├── KMeansClusterer.java       # F-15（基于 Weka）
+    │   │   └── SentimentTrend.java        # F-16
+    │   ├── controller/
+    │   │   ├── ImportController.java
+    │   │   ├── QueryController.java
+    │   │   └── AnalysisController.java
+    │   └── view/
+    │       ├── MainFrame.java
+    │       ├── ImportPanel.java
+    │       ├── QueryPanel.java
+    │       ├── AnalysisPanel.java
+    │       ├── QuoteWallPanel.java        # F-24
+    │       └── chart/
+    │           ├── CooccurNetworkPanel.java   # F-20
+    │           ├── TrendLineChart.java        # F-21
+    │           ├── ThemeHeatmap.java          # F-22
+    │           └── SentimentDashboard.java    # F-23
+    └── resources/
+        ├── config.properties
+        ├── schema.sql               # 建表 DDL
+        └── icons/</code></pre>
+<hr />
+<h2 id="三数据库设计">三、数据库设计</h2>
+<h3 id="e-r-关系文字描述">3.1 E-R 关系（文字描述）</h3>
+<p>实体（强类型）： - <strong>GkgRecord</strong>：一条 GKG
+新闻语义记录（PK：<code>record_id</code>） -
+<strong>Person</strong>：人物（PK：<code>person_id</code>，UK：<code>name</code>）
+-
+<strong>Organization</strong>：组织（PK：<code>org_id</code>，UK：<code>name</code>）
+-
+<strong>Theme</strong>：主题代码（PK：<code>theme_id</code>，UK：<code>code</code>，如
+<code>SANCTIONS</code>） -
+<strong>Location</strong>：地点（PK：<code>location_id</code>，UK：<code>name</code>
++ <code>country_code</code>） -
+<strong>Quote</strong>：引语（PK：<code>quote_id</code>，FK：<code>record_id</code>）</p>
+<p>关联（M:N 通过中间表）： - GkgRecord <em>—</em> Person（中间表
+<code>record_person</code>） - GkgRecord <em>—</em> Organization（中间表
+<code>record_organization</code>） - GkgRecord <em>—</em> Theme（中间表
+<code>record_theme</code>） - GkgRecord <em>—</em> Location（中间表
+<code>record_location</code>）</p>
+<p>派生（分析结果缓存表）： -
+<strong>Cooccurrence</strong>：人物/组织共现统计（PK：<code>e1_id, e1_type, e2_id, e2_type</code>）</p>
+<pre><code>              ┌──────────────┐
+              │  GkgRecord   │ 1
+              └─────┬────────┘
+                    │ *
+       ┌────────────┼────────────┬─────────────┐
+       │            │            │             │
+       │ *          │ *          │ *           │ 1..*
+┌──────┴───┐  ┌─────┴───┐  ┌─────┴───┐  ┌──────┴────┐  ┌────────┐
+│ Person   │  │ Org     │  │ Theme   │  │ Location  │  │ Quote  │
+└──────────┘  └─────────┘  └─────────┘  └───────────┘  └────────┘</code></pre>
+<h3 id="核心数据表结构">3.2 核心数据表结构</h3>
+<h4 id="主记录表-gkg_record">3.2.1 主记录表 <code>gkg_record</code></h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>record_id</td>
+<td>TEXT</td>
+<td>PK</td>
+<td>GKG GKGRECORDID（形如 <code>20240101000000-T1</code>）</td>
+</tr>
+<tr>
+<td>publish_date</td>
+<td>TEXT</td>
+<td>NOT NULL，INDEX</td>
+<td>发布时间（YYYY-MM-DD HH:mm）</td>
+</tr>
+<tr>
+<td>source_collection</td>
+<td>INTEGER</td>
+<td></td>
+<td>来源集合 ID</td>
+</tr>
+<tr>
+<td>source_common_name</td>
+<td>TEXT</td>
+<td></td>
+<td>媒体名称（如 cnn.com）</td>
+</tr>
+<tr>
+<td>document_id</td>
+<td>TEXT</td>
+<td></td>
+<td>文章 URL</td>
+</tr>
+<tr>
+<td>tone</td>
+<td>REAL</td>
+<td></td>
+<td>V2Tone 总情感分（-100~+100）</td>
+</tr>
+<tr>
+<td>positive_score</td>
+<td>REAL</td>
+<td></td>
+<td>正面得分</td>
+</tr>
+<tr>
+<td>negative_score</td>
+<td>REAL</td>
+<td></td>
+<td>负面得分</td>
+</tr>
+<tr>
+<td>polarity</td>
+<td>REAL</td>
+<td></td>
+<td>极性</td>
+</tr>
+<tr>
+<td>word_count</td>
+<td>INTEGER</td>
+<td></td>
+<td>词数</td>
+</tr>
+</tbody>
+</table>
+<h4 id="实体表">3.2.2 实体表</h4>
+<p><code>person(person_id INTEGER PK AUTOINCREMENT, name TEXT UNIQUE NOT NULL)</code>
+<code>organization(org_id INTEGER PK AUTOINCREMENT, name TEXT UNIQUE NOT NULL)</code>
+<code>theme(theme_id INTEGER PK AUTOINCREMENT, code TEXT UNIQUE NOT NULL)</code>
+<code>location(location_id INTEGER PK AUTOINCREMENT, name TEXT, country_code TEXT, lat REAL, lng REAL, UNIQUE(name, country_code))</code></p>
+<h4 id="关联表">3.2.3 关联表</h4>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>表</th>
+<th>字段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>record_person</td>
+<td>record_id TEXT FK, person_id INT FK, char_offset INT, PK(record_id,
+person_id)</td>
+</tr>
+<tr>
+<td>record_organization</td>
+<td>record_id TEXT FK, org_id INT FK, char_offset INT, PK(record_id,
+org_id)</td>
+</tr>
+<tr>
+<td>record_theme</td>
+<td>record_id TEXT FK, theme_id INT FK, char_offset INT, PK(record_id,
+theme_id)</td>
+</tr>
+<tr>
+<td>record_location</td>
+<td>record_id TEXT FK, location_id INT FK, char_offset INT,
+PK(record_id, location_id)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="引语表-quote">3.2.4 引语表 <code>quote</code></h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>quote_id</td>
+<td>INTEGER</td>
+<td>PK AUTOINCREMENT</td>
+</tr>
+<tr>
+<td>record_id</td>
+<td>TEXT</td>
+<td>FK → gkg_record.record_id</td>
+</tr>
+<tr>
+<td>char_offset</td>
+<td>INTEGER</td>
+<td></td>
+</tr>
+<tr>
+<td>length</td>
+<td>INTEGER</td>
+<td></td>
+</tr>
+<tr>
+<td>verb</td>
+<td>TEXT</td>
+<td>引导词（said / claimed）</td>
+</tr>
+<tr>
+<td>content</td>
+<td>TEXT</td>
+<td>引语原文</td>
+</tr>
+<tr>
+<td>sentiment</td>
+<td>INTEGER</td>
+<td>-1 负 / 0 中 / 1 正（F-18 用，可空）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="共现缓存表-cooccurrence">3.2.5 共现缓存表
+<code>cooccurrence</code></h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>e1_id</td>
+<td>INTEGER</td>
+<td>节点 1 id</td>
+</tr>
+<tr>
+<td>e1_type</td>
+<td>TEXT</td>
+<td><code>PERSON</code> / <code>ORG</code></td>
+</tr>
+<tr>
+<td>e2_id</td>
+<td>INTEGER</td>
+<td>节点 2 id</td>
+</tr>
+<tr>
+<td>e2_type</td>
+<td>TEXT</td>
+<td><code>PERSON</code> / <code>ORG</code></td>
+</tr>
+<tr>
+<td>co_count</td>
+<td>INTEGER</td>
+<td>共同出现新闻数</td>
+</tr>
+<tr>
+<td>PK</td>
+<td>(e1_id, e1_type, e2_id, e2_type)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="索引策略">3.2.6 索引策略</h4>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_gkg_date     <span class="kw">ON</span> gkg_record(publish_date);</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_rp_person    <span class="kw">ON</span> record_person(person_id);</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_ro_org       <span class="kw">ON</span> record_organization(org_id);</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_rt_theme     <span class="kw">ON</span> record_theme(theme_id);</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_quote_record <span class="kw">ON</span> quote(record_id);</span></code></pre></div>
+<hr />
+<h2 id="四模块说明">四、模块说明</h2>
+<h3 id="模块划分总览">4.1 模块划分总览</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>序号</th>
+<th>模块</th>
+<th>主要类</th>
+<th>对应需求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1</td>
+<td>数据接入</td>
+<td><code>ImportService</code>、<code>GkgLineParser</code></td>
+<td>F-01 / F-02 / F-03 / F-05</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>持久化</td>
+<td><code>DbHelper</code> + 所有 <code>*Dao</code></td>
+<td>F-02</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>查询</td>
+<td><code>QueryService</code></td>
+<td>F-06 / F-07 / F-08 / F-09 / F-10</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>分析</td>
+<td><code>AnalysisService</code> + <code>algorithm/*</code></td>
+<td>F-12 ~ F-16</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>导出</td>
+<td><code>ExportService</code></td>
+<td>F-04</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>控制器</td>
+<td><code>*Controller</code></td>
+<td>联动 View 与 Service</td>
+</tr>
+<tr>
+<td>M7</td>
+<td>主界面</td>
+<td><code>MainFrame</code> + <code>*Panel</code></td>
+<td>F-01 / F-04 / F-06 ~ F-09 入口</td>
+</tr>
+<tr>
+<td>M8</td>
+<td>可视化</td>
+<td><code>chart/*</code></td>
+<td>F-20 / F-21 / F-22 / F-23 / F-24</td>
+</tr>
+</tbody>
+</table>
+<h3 id="核心接口设计">4.2 核心接口设计</h3>
+<blockquote>
+<p>以下方法签名将作为 A、B 两位成员之间的协作契约，不得擅自变更。</p>
+</blockquote>
+<h4 id="importserviceb-负责">4.2.1 ImportService（B 负责）</h4>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">interface</span> ImportService <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> <span class="co">导入单个</span> GKG csv <span class="co">文件</span> <span class="co">*/</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    ImportResult <span class="fu">importFile</span><span class="op">(</span><span class="bu">File</span> csvFile<span class="op">,</span> ProgressListener listener<span class="op">);</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> <span class="co">批量导入目录</span> <span class="co">*/</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    ImportResult <span class="fu">importDirectory</span><span class="op">(</span><span class="bu">File</span> dir<span class="op">,</span> ProgressListener listener<span class="op">);</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> <span class="co">清理无效数据，返回清理统计</span> <span class="co">*/</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    CleanResult <span class="fu">cleanInvalidData</span><span class="op">();</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">record</span> <span class="fu">ImportResult</span><span class="op">(</span><span class="dt">int</span> total<span class="op">,</span> <span class="dt">int</span> success<span class="op">,</span> <span class="dt">int</span> skipped<span class="op">,</span> <span class="dt">long</span> elapsedMs<span class="op">)</span> <span class="op">{}</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">record</span> <span class="fu">CleanResult</span><span class="op">(</span><span class="dt">int</span> duplicateRemoved<span class="op">,</span> <span class="dt">int</span> nullThemeRemoved<span class="op">,</span> <span class="dt">int</span> invalidRowRemoved<span class="op">)</span> <span class="op">{}</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">@FunctionalInterface</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">interface</span> ProgressListener <span class="op">{</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> progress<span class="co">:</span> <span class="co">0~100，</span>message<span class="co">：当前阶段说明</span> <span class="co">*/</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">onProgress</span><span class="op">(</span><span class="dt">int</span> progress<span class="op">,</span> <span class="bu">String</span> message<span class="op">);</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h4 id="queryservicea-负责实现接口由-b-在-w2-末交付">4.2.2
+QueryService（A 负责实现，接口由 B 在 W2 末交付）</h4>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">interface</span> QueryService <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-06</span> <span class="co">组合查询，分页</span> <span class="co">*/</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    Page<span class="op">&lt;</span>GkgRecord<span class="op">&gt;</span> <span class="fu">search</span><span class="op">(</span>QueryCondition cond<span class="op">,</span> <span class="dt">int</span> page<span class="op">,</span> <span class="dt">int</span> pageSize<span class="op">);</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-07</span> <span class="co">人物档案</span> <span class="co">*/</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    PersonProfile <span class="fu">getPersonProfile</span><span class="op">(</span><span class="bu">String</span> personName<span class="op">);</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-08</span> <span class="co">组织档案</span> <span class="co">*/</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    OrgProfile <span class="fu">getOrgProfile</span><span class="op">(</span><span class="bu">String</span> orgName<span class="op">);</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-09</span> <span class="co">主题追踪：日期</span> <span class="co">-&gt;</span> <span class="co">频次、平均情感</span> <span class="co">*/</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    ThemeTrend <span class="fu">getThemeTrend</span><span class="op">(</span><span class="bu">String</span> themeCode<span class="op">,</span> LocalDate from<span class="op">,</span> LocalDate to<span class="op">);</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-10</span> <span class="co">模糊搜索（前缀）</span> <span class="co">*/</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">List</span><span class="op">&lt;</span><span class="bu">String</span><span class="op">&gt;</span> <span class="fu">suggestPerson</span><span class="op">(</span><span class="bu">String</span> prefix<span class="op">,</span> <span class="dt">int</span> limit<span class="op">);</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">List</span><span class="op">&lt;</span><span class="bu">String</span><span class="op">&gt;</span> <span class="fu">suggestOrg</span><span class="op">(</span><span class="bu">String</span> prefix<span class="op">,</span> <span class="dt">int</span> limit<span class="op">);</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h4
+id="analysisserviceb-负责装配-impl其中-f-13-pagerank-与-f-16-情感分析的算法类由-a-实现并交付">4.2.3
+AnalysisService（B 负责装配 Impl；其中 F-13 PageRank 与 F-16
+情感分析的算法类由 A 实现并交付）</h4>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">interface</span> AnalysisService <span class="op">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-12</span> <span class="co">构建/刷新共现网络</span> <span class="co">*/</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">rebuildCooccurrence</span><span class="op">();</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-13</span> PageRank Top<span class="co">-</span>N <span class="co">焦点</span> <span class="co">*/</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">List</span><span class="op">&lt;</span>FocusNode<span class="op">&gt;</span> <span class="fu">topFocusPersons</span><span class="op">(</span><span class="dt">int</span> topN<span class="op">);</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-14</span> <span class="co">主题热度</span> <span class="co">*/</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="bu">List</span><span class="op">&lt;</span>ThemeHeat<span class="op">&gt;</span> <span class="fu">themeHeatRank</span><span class="op">(</span>Granularity g<span class="op">,</span> LocalDate from<span class="op">,</span> LocalDate to<span class="op">,</span> <span class="dt">int</span> topN<span class="op">);</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-15</span> K<span class="co">-</span>Means <span class="co">主题聚类</span> <span class="co">*/</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="bu">List</span><span class="op">&lt;</span>Cluster<span class="op">&gt;</span> <span class="fu">clusterByKMeans</span><span class="op">(</span><span class="dt">int</span> k<span class="op">,</span> <span class="dt">int</span> maxIter<span class="op">);</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">/**</span> F<span class="co">-16</span> <span class="co">情感趋势</span> <span class="co">*/</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    SentimentSeries <span class="fu">sentimentTrend</span><span class="op">(</span>EntityRef ref<span class="op">,</span> LocalDate from<span class="op">,</span> LocalDate to<span class="op">);</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h4 id="exportservicea-负责">4.2.4 ExportService（A 负责）</h4>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">interface</span> ExportService <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">exportCsv</span><span class="op">(</span><span class="bu">List</span><span class="op">&lt;?&gt;</span> rows<span class="op">,</span> <span class="bu">File</span> target<span class="op">);</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">exportExcel</span><span class="op">(</span><span class="bu">List</span><span class="op">&lt;?&gt;</span> rows<span class="op">,</span> <span class="bu">File</span> target<span class="op">);</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">exportJson</span><span class="op">(</span><span class="bu">Object</span> data<span class="op">,</span> <span class="bu">File</span> target<span class="op">);</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h4 id="视图与控制器a-负责">4.2.5 视图与控制器（A 负责）</h4>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> ImportController <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="fu">ImportController</span><span class="op">(</span>ImportService importService<span class="op">,</span> ImportPanel view<span class="op">)</span> <span class="op">{</span> <span class="kw">...</span> <span class="op">}</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">onImportButton</span><span class="op">(</span><span class="bu">File</span> file<span class="op">);</span>  <span class="co">// 异步 SwingWorker 调用 service</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> QueryController <span class="op">{</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="fu">QueryController</span><span class="op">(</span>QueryService queryService<span class="op">,</span> QueryPanel view<span class="op">)</span> <span class="op">{</span> <span class="kw">...</span> <span class="op">}</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">onSearch</span><span class="op">(</span>QueryCondition cond<span class="op">);</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> AnalysisController <span class="op">{</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="fu">AnalysisController</span><span class="op">(</span>AnalysisService analysisService<span class="op">,</span> AnalysisPanel view<span class="op">)</span> <span class="op">{</span> <span class="kw">...</span> <span class="op">}</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">onShowFocusNetwork</span><span class="op">();</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">onShowThemeTrend</span><span class="op">(</span><span class="bu">String</span> themeCode<span class="op">,</span> LocalDate from<span class="op">,</span> LocalDate to<span class="op">);</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">onShowSentimentDashboard</span><span class="op">(</span>EntityRef ref<span class="op">);</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="关键流程时序">4.3 关键流程时序</h3>
+<h4 id="数据导入f-01">4.3.1 数据导入（F-01）</h4>
+<pre><code>ImportPanel ──onClick──► ImportController ──new SwingWorker──► ImportService.importFile
+                                                                     │
+                                                                     ├─ 行解析 GkgLineParser
+                                                                     ├─ DAO.batchInsert（事务）
+                                                                     └─ ProgressListener.onProgress
+ImportPanel ◄── 进度刷新 ◄── publish() ◄────────────────────────────┘
+ImportPanel ◄── 结果弹窗 ◄── done()</code></pre>
+<h4 id="主题趋势查询f-09-f-21">4.3.2 主题趋势查询（F-09 + F-21）</h4>
+<pre><code>QueryPanel ──onSearch──► QueryController ──► QueryService.getThemeTrend
+                                                       │
+                                                       └─ DAO 聚合 SQL（按日 GROUP BY）
+QueryPanel ◄── ThemeTrend ◄────────────────────────────┘
+QueryPanel ──► TrendLineChart.render(series)</code></pre>
+<h3 id="部署与运行">4.4 部署与运行</h3>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 构建</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mvn</span> clean package <span class="at">-DskipTests</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 运行</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="ex">java</span> <span class="at">-jar</span> target/gkg-platform-1.0.0-shaded.jar</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 首次运行自动在 ./db/ 下创建 gkg.db 并执行 schema.sql</span></span></code></pre></div>
+<hr />
+<h2 id="附录-a风险与控制">附录 A：风险与控制</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>控制措施</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>大文件导入 OOM</td>
+<td>按行流式解析 + 每 1000 条一次 <code>commit</code></td>
+</tr>
+<tr>
+<td>共现矩阵爆炸</td>
+<td>仅统计同一新闻内 Top-K 个人物，K=20</td>
+</tr>
+<tr>
+<td>K-Means 收敛慢</td>
+<td>限制最大迭代 50，文档数 &gt; 1 万则先抽样</td>
+</tr>
+<tr>
+<td>中文/特殊字符</td>
+<td>文件统一 UTF-8 读写；JFreeChart 字体设为「微软雅黑」</td>
+</tr>
+<tr>
+<td>单元测试覆盖</td>
+<td>仅对 <code>GkgLineParser</code> 与 <code>PageRankRunner</code>
+做核心断言</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

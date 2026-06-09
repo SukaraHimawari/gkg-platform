@@ -1,0 +1,28 @@
+# 构建产物
+target/
+*.class
+
+# 运行时
+db/
+logs/
+
+# IDE
+*.iml
+.idea/
+.vscode/
+
+# 数据（500MB+ 不进库；每人本地一份）
+data/gkg-raw/
+data/*.zip
+data/*.csv
+data/*.tsv
+data.zip
+
+# Windows 快捷方式（误生成）
+*.lnk
+
+# 其它本地临时
+prompt.docx
+*.bak
+.DS_Store
+Thumbs.db
