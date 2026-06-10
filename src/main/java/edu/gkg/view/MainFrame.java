@@ -1,20 +1,30 @@
 package edu.gkg.view;
 
+import edu.gkg.common.ServiceRegistry;
 import edu.gkg.common.Theme;
-import edu.gkg.common.UiUtil;
+import edu.gkg.controller.AnalysisController;
+import edu.gkg.controller.ImportController;
+import edu.gkg.controller.QueryController;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
+import java.text.NumberFormat;
 
 public class MainFrame extends JFrame {
 
-    private final JLabel statusLeft  = makeFooterLabel("数据库记录数：12,458,721 条");
-    private final JLabel statusMid   = makeFooterLabel("图谱实体数：3,245,881 个");
+    private final JLabel statusLeft  = makeFooterLabel("数据库记录数：—");
+    private final JLabel statusMid   = makeFooterLabel("图谱实体数：—");
     private final JLabel statusRight = makeFooterLabel("● 就绪");
 
-    public MainFrame() {
+    private final ImportPanel   importPanel   = new ImportPanel();
+    private final QueryPanel    queryPanel    = new QueryPanel();
+    private final AnalysisPanel analysisPanel = new AnalysisPanel();
+
+    private final ServiceRegistry services;
+
+    public MainFrame(ServiceRegistry services) {
         super("GKG 全球新闻语义分析与主题追踪平台");
+        this.services = services;
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1360, 860);
         setLocationRelativeTo(null);
@@ -25,9 +35,9 @@ public class MainFrame extends JFrame {
         tabs.setFont(Theme.FONT_DEFAULT);
         tabs.putClientProperty("JTabbedPane.tabType",      "underlined");
         tabs.putClientProperty("JTabbedPane.tabAreaInsets","12,16,0,16");
-        tabs.addTab("  数据管理  ", new ImportPanel());
-        tabs.addTab("  查询检索  ", new QueryPanel());
-        tabs.addTab("  挖掘分析  ", new AnalysisPanel());
+        tabs.addTab("  数据管理  ", importPanel);
+        tabs.addTab("  查询检索  ", queryPanel);
+        tabs.addTab("  挖掘分析  ", analysisPanel);
         tabs.addTab("  关于  ",     buildAboutPanel());
 
         setLayout(new BorderLayout());
@@ -35,6 +45,32 @@ public class MainFrame extends JFrame {
         add(tabs, BorderLayout.CENTER);
         add(buildStatusBar(), BorderLayout.SOUTH);
         getContentPane().setBackground(Theme.BG_APP);
+
+        // 挂控制器
+        new ImportController(importPanel,   services.importer(), services.exporter(), this::refreshStatusBar);
+        new QueryController(queryPanel,     services.query(),    services.exporter());
+        new AnalysisController(analysisPanel, services.analysis());
+
+        // 启动时刷新一次状态栏
+        refreshStatusBar();
+    }
+
+    private void refreshStatusBar() {
+        new SwingWorker<long[], Void>() {
+            @Override protected long[] doInBackground() {
+                long total;
+                try { total = services.query().countAll(); }
+                catch (Exception e) { total = -1; }
+                return new long[]{total};
+            }
+            @Override protected void done() {
+                try {
+                    long[] r = get();
+                    NumberFormat nf = NumberFormat.getIntegerInstance();
+                    statusLeft.setText("数据库记录数：" + (r[0] < 0 ? "—" : nf.format(r[0]) + " 条"));
+                } catch (Exception ignored) {}
+            }
+        }.execute();
     }
 
     private JComponent buildHeaderBar() {
@@ -168,4 +204,8 @@ public class MainFrame extends JFrame {
     }
 
     public void setStatus(String text) { statusRight.setText("● " + text); }
+
+    public ImportPanel   importPanel()   { return importPanel; }
+    public QueryPanel    queryPanel()    { return queryPanel; }
+    public AnalysisPanel analysisPanel() { return analysisPanel; }
 }
