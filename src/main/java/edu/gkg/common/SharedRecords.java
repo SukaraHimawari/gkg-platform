@@ -84,4 +84,9 @@ public final class SharedRecords {
 
     /** 导入进度回调单元，UI 侧消费 */
     public record ProgressTick(int percent, String currentFile, String message) {}
+
+    // ===== 在线下载 =====
+
+    /** 一次在线下载结果汇总（成功/失败/总数 + 耗时） */
+    public record DownloadResult(int total, int success, int failed, long elapsedMs) {}
 }

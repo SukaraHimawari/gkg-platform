@@ -5,12 +5,15 @@ import edu.gkg.common.ServiceRegistry;
 import edu.gkg.common.Theme;
 import edu.gkg.common.UiUtil;
 import edu.gkg.mock.MockAnalysisService;
+import edu.gkg.mock.MockDownloadService;
 import edu.gkg.mock.MockImportService;
 import edu.gkg.mock.MockQueryService;
 import edu.gkg.service.AnalysisService;
+import edu.gkg.service.DownloadService;
 import edu.gkg.service.ImportService;
 import edu.gkg.service.QueryService;
 import edu.gkg.service.impl.ExportServiceImpl;
+import edu.gkg.service.impl.GdeltDownloader;
 import edu.gkg.view.MainFrame;
 
 import javax.swing.*;
@@ -43,7 +46,8 @@ public class App {
             QueryService    q  = new MockQueryService();
             AnalysisService an = new MockAnalysisService();
             ImportService   im = new MockImportService();
-            return new ServiceRegistry(q, an, im, new ExportServiceImpl());
+            DownloadService dl = new MockDownloadService();
+            return new ServiceRegistry(q, an, im, dl, new ExportServiceImpl());
         }
         // 真实现路径：等 B 推 DbHelper / DAO / AnalysisServiceImpl 后填
         // 当下 QueryServiceImpl 一调就抛 UnsupportedOperationException，提示明确
@@ -51,6 +55,7 @@ public class App {
                 new edu.gkg.service.impl.QueryServiceImpl(),
                 placeholderAnalysis(),
                 placeholderImport(),
+                new GdeltDownloader(),
                 new ExportServiceImpl());
     }
 

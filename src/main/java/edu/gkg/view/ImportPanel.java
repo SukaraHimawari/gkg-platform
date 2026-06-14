@@ -1,6 +1,8 @@
 package edu.gkg.view;
 
 import edu.gkg.common.*;
+import edu.gkg.common.DatePickerField;
+import edu.gkg.common.SharedRecords.DownloadResult;
 import edu.gkg.common.SharedRecords.ImportResult;
 import edu.gkg.common.SharedRecords.ProgressTick;
 
@@ -9,6 +11,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -29,6 +32,12 @@ public class ImportPanel extends JPanel {
     private final JButton      cleanBtn = UiUtil.secondaryButton("数据清理");
     private final JButton      exportBtn= UiUtil.secondaryButton("结果导出");
     private final JButton      stopBtn  = UiUtil.secondaryButton("停止导入");
+
+    // ===== 在线下载控件 =====
+    private final DatePickerField datePicker   = new DatePickerField(LocalDate.now().minusDays(1));
+    private final JLabel          destPathLabel= UiUtil.mutedLabel("data/gkg-raw/YYYYMMDD/");
+    private final JButton         downloadBtn  = UiUtil.primaryButton("▼ 下载该日期数据");
+    private final JCheckBox       autoImportCb = new JCheckBox("下载完成后自动导入", true);
 
     /** Controller 在外面通过 setOnFilesChosen 来收文件 */
     private Consumer<List<File>> onFilesChosen;
@@ -83,12 +92,52 @@ public class ImportPanel extends JPanel {
         actRow.add(stopBox, BorderLayout.EAST);
         actionCard.body(actRow);
 
+        // ===== 在线下载 Card =====
+        Card downloadCard = new Card("在线下载 GKG 数据");
+        datePicker.setOnChange(d -> refreshDestLabel());
+        refreshDestLabel();
+
+        autoImportCb.setOpaque(false);
+        autoImportCb.setFont(Theme.FONT_DEFAULT);
+        autoImportCb.setForeground(Theme.TEXT_PRIMARY);
+
+        JPanel dlRow1 = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
+        dlRow1.setOpaque(false);
+        dlRow1.add(UiUtil.mutedLabel("选择日期"));
+        dlRow1.add(datePicker);
+
+        JPanel dlRow2 = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
+        dlRow2.setOpaque(false);
+        dlRow2.add(UiUtil.mutedLabel("保存到"));
+        dlRow2.add(destPathLabel);
+
+        JPanel dlRow3 = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
+        dlRow3.setOpaque(false);
+        dlRow3.add(downloadBtn);
+        dlRow3.add(autoImportCb);
+
+        JPanel dlBody = new JPanel();
+        dlBody.setOpaque(false);
+        dlBody.setLayout(new BoxLayout(dlBody, BoxLayout.Y_AXIS));
+        dlRow1.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dlRow2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dlRow3.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dlBody.add(dlRow1);
+        dlBody.add(Box.createVerticalStrut(Theme.SPACE_SM));
+        dlBody.add(dlRow2);
+        dlBody.add(Box.createVerticalStrut(Theme.SPACE_MD));
+        dlBody.add(dlRow3);
+        downloadCard.body(dlBody);
+
         JPanel leftCenter = new JPanel();
         leftCenter.setOpaque(false);
         leftCenter.setLayout(new BoxLayout(leftCenter, BoxLayout.Y_AXIS));
+        downloadCard.setAlignmentX(Component.LEFT_ALIGNMENT);
         dropCard.setAlignmentX(Component.LEFT_ALIGNMENT);
         progCard.setAlignmentX(Component.LEFT_ALIGNMENT);
         actionCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        leftCenter.add(downloadCard);
+        leftCenter.add(Box.createVerticalStrut(Theme.SPACE_LG));
         leftCenter.add(dropCard);
         leftCenter.add(Box.createVerticalStrut(Theme.SPACE_LG));
         leftCenter.add(progCard);
@@ -157,6 +206,27 @@ public class ImportPanel extends JPanel {
         m.addRow(new Object[]{"等待真实数据接入", "—", "—", "—", "—", "—", "—", "—"});
     }
 
+    private void refreshDestLabel() {
+        LocalDate d = selectedDate();
+        String dir = "data/gkg-raw/" + d.format(DateTimeFormatter.BASIC_ISO_DATE) + "/";
+        destPathLabel.setText(dir);
+    }
+
+    public void appendDownloadHistory(String date, DownloadResult r) {
+        DefaultTableModel m = (DefaultTableModel) historyTable.getModel();
+        if (m.getRowCount() > 0
+                && "等待真实数据接入".equals(m.getValueAt(m.getRowCount() - 1, 0))) {
+            m.removeRow(m.getRowCount() - 1);
+        }
+        NumberFormat nf = NumberFormat.getIntegerInstance();
+        m.insertRow(0, new Object[]{
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                "GDELT 在线 " + date, "在线下载", "~350 MB",
+                nf.format(r.success()), "—", nf.format(r.failed()),
+                formatElapsed(r.elapsedMs())
+        });
+    }
+
     public void appendHistory(String src, String type, String size, ImportResult r) {
         DefaultTableModel m = (DefaultTableModel) historyTable.getModel();
         if (m.getRowCount() > 0
@@ -218,4 +288,12 @@ public class ImportPanel extends JPanel {
     public void clearPending()        { pendingFiles.clear(); }
 
     public void setOnFilesChosen(Consumer<List<File>> sink) { this.onFilesChosen = sink; }
+
+    // ===== 在线下载控件 getter =====
+
+    public JButton   downloadButton()  { return downloadBtn; }
+    public boolean   autoImport()      { return autoImportCb.isSelected(); }
+    public LocalDate selectedDate() {
+        return datePicker.getSelectedDate();
+    }
 }

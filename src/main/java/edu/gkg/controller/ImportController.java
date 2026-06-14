@@ -50,6 +50,13 @@ public class ImportController {
             UiUtil.warn(panel, "请先选择要导入的文件或文件夹。");
             return;
         }
+        startImportFiles(files);
+    }
+
+    /**
+     * 对外公开入口：DownloadController 下载完成后可直接传入文件列表发起导入。
+     */
+    public void startImportFiles(List<File> files) {
         if (currentTask.get() != null && !currentTask.get().isDone()) {
             UiUtil.warn(panel, "当前已有导入任务在跑，请先停止。");
             return;
@@ -58,7 +65,7 @@ public class ImportController {
 
         GuiTask<ImportResult> task = new GuiTask<>(
                 panel,
-                null, // 进度直接走 invokeLater，不经 GuiTask 的 Progress 通道
+                null,
                 result -> {
                     panel.applyResult(result);
                     String src = files.size() == 1 ? files.get(0).getName() : files.size() + " 项";

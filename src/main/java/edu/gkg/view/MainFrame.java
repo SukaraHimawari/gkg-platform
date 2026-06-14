@@ -3,6 +3,7 @@ package edu.gkg.view;
 import edu.gkg.common.ServiceRegistry;
 import edu.gkg.common.Theme;
 import edu.gkg.controller.AnalysisController;
+import edu.gkg.controller.DownloadController;
 import edu.gkg.controller.ImportController;
 import edu.gkg.controller.QueryController;
 
@@ -47,9 +48,11 @@ public class MainFrame extends JFrame {
         getContentPane().setBackground(Theme.BG_APP);
 
         // 挂控制器
-        new ImportController(importPanel,   services.importer(), services.exporter(), this::refreshStatusBar);
+        ImportController importCtrl = new ImportController(
+                importPanel, services.importer(), services.exporter(), this::refreshStatusBar);
         new QueryController(queryPanel,     services.query(),    services.exporter());
         new AnalysisController(analysisPanel, services.analysis());
+        new DownloadController(importPanel, services.downloader(), services.importer(), importCtrl);
 
         // 启动时刷新一次状态栏
         refreshStatusBar();

@@ -1,6 +1,7 @@
 package edu.gkg.common;
 
 import edu.gkg.service.AnalysisService;
+import edu.gkg.service.DownloadService;
 import edu.gkg.service.ExportService;
 import edu.gkg.service.ImportService;
 import edu.gkg.service.QueryService;
@@ -13,5 +14,6 @@ public record ServiceRegistry(
         QueryService     query,
         AnalysisService  analysis,
         ImportService    importer,
+        DownloadService  downloader,
         ExportService    exporter) {
 }
