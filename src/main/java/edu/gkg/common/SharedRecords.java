@@ -4,17 +4,16 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 临时承载所有"共享 record"，等 B 把正式的 model package 推过来后，
- * 把同名 record 搬过去，这里整文件删除即可。
- *
- * 字段以协作文档 §5 接口契约为准，B 不在 model 里出的 record（QueryCondition、
- * EntityRef、FocusNode 等）就放这里，让 A 这边能编译。
+ * 跨模块共享的 record/enum 定义。
+ * 等 B 把正式 model package 补齐后，可把同名 record 迁移过去，此文件整体删除。
  */
 public final class SharedRecords {
 
     private SharedRecords() {}
 
     public enum EntityType { PERSON, ORG, THEME }
+
+    public enum Granularity { DAY, WEEK, MONTH }
 
     public record EntityRef(EntityType type, String name) {}
 
@@ -26,7 +25,27 @@ public final class SharedRecords {
             String orgName,
             String locationName) {}
 
-    public record Page<T>(List<T> rows, int page, int pageSize, long total) {}
+    public record Page<T>(List<T> rows, int page, int pageSize, long total) {
+        public int totalPages() {
+            return pageSize == 0 ? 1 : (int) Math.ceil((double) total / pageSize);
+        }
+    }
+
+    /** F-06 查询结果行（轻量展示用） */
+    public record SearchRow(
+            String recordId,
+            String publishDate,
+            String sourceCommonName,
+            Double tone,
+            String documentId) {}
+
+    /** F-07/F-08 人物/组织档案 */
+    public record EntityProfile(
+            String name,
+            long newsCount,
+            double avgTone,
+            int themeCount,
+            List<String> topRelated) {}
 
     public record CooccurEdge(int e1Id, String e1Name, int e2Id, String e2Name, int coCount) {}
 
@@ -41,6 +60,4 @@ public final class SharedRecords {
     public record ThemeHeat(String themeCode, String bucket, int count) {}
 
     public record Cluster(int clusterId, List<String> keywords, int recordCount) {}
-
-    public enum Granularity { DAY, WEEK, MONTH }
 }

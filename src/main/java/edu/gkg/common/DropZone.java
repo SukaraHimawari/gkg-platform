@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 public class DropZone extends JPanel {
 
     private final JButton browseBtn = new JButton("选择文件 / 文件夹");
-    private final Consumer<List<File>> onFilesDropped;
+    private Consumer<List<File>> onFilesDropped;
     private boolean hover = false;
 
     public DropZone(Consumer<List<File>> onFilesDropped) {
@@ -66,6 +66,8 @@ public class DropZone extends JPanel {
     }
 
     public JButton browseButton() { return browseBtn; }
+
+    public void setConsumer(Consumer<List<File>> consumer) { this.onFilesDropped = consumer; }
 
     @Override
     protected void paintComponent(Graphics g0) {

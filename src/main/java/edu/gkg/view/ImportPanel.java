@@ -9,13 +9,21 @@ import java.io.File;
 
 public class ImportPanel extends JPanel {
 
-    private final JProgressBar progress  = new JProgressBar(0, 100);
-    private final JLabel       currentFile = new JLabel("当前文件：—");
-    private final JLabel       speedLabel  = new JLabel("已用时 00:00:00   预计剩余 —");
-    private final StatCard     cardSuccess = new StatCard("成功",  Theme.SUCCESS, "✓").value("0");
-    private final StatCard     cardSkip    = new StatCard("跳过",  Theme.WARN,    "!").value("0");
-    private final StatCard     cardFail    = new StatCard("失败",  Theme.DANGER,  "✕").value("0");
-    private final JTable       historyTable;
+    private final JProgressBar   progress    = new JProgressBar(0, 100);
+    private final JLabel         currentFile = new JLabel("当前文件：—");
+    private final JLabel         speedLabel  = new JLabel("已用时 00:00:00   预计剩余 —");
+    private final StatCard       cardSuccess = new StatCard("成功",  Theme.SUCCESS, "✓").value("0");
+    private final StatCard       cardSkip    = new StatCard("跳过",  Theme.WARN,    "!").value("0");
+    private final StatCard       cardFail    = new StatCard("失败",  Theme.DANGER,  "✕").value("0");
+    private final JTable         historyTable;
+    private final DefaultTableModel historyModel;
+
+    // 暴露给 ImportController 绑定
+    public final JButton  runBtn    = UiUtil.primaryButton("▶ 开始导入");
+    public final JButton  cleanBtn  = UiUtil.secondaryButton("数据清理");
+    public final JButton  exportBtn = UiUtil.secondaryButton("结果导出");
+    public final JButton  stopBtn   = UiUtil.secondaryButton("停止导入");
+    public final DropZone drop;
 
     public ImportPanel() {
         setLayout(new BorderLayout(Theme.SPACE_LG, Theme.SPACE_LG));
@@ -27,11 +35,14 @@ public class ImportPanel extends JPanel {
         left.setOpaque(false);
 
         Card dropCard = new Card("数据导入");
-        DropZone drop = new DropZone(files -> { /* TODO: 等 ImportService 联通 */ });
+        drop = new DropZone(files -> { /* 由 ImportController.bind() 覆盖 */ });
         drop.browseButton().addActionListener(e -> {
             JFileChooser fc = new JFileChooser();
             fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-            fc.showOpenDialog(this);
+            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File selected = fc.getSelectedFile();
+                currentFile.setText("当前文件：" + selected.getName());
+            }
         });
         dropCard.body(drop);
 
@@ -57,12 +68,8 @@ public class ImportPanel extends JPanel {
         progInner.add(speedLabel);
         progCard.body(progInner);
 
-        JButton runBtn   = UiUtil.primaryButton("▶ 开始导入");
-        JButton cleanBtn = UiUtil.secondaryButton("数据清理");
-        JButton exportBtn= UiUtil.secondaryButton("结果导出");
-        JButton stopBtn  = UiUtil.secondaryButton("停止导入");
-        Card actionCard  = new Card("操作");
-        JPanel actBox    = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
+        Card actionCard = new Card("操作");
+        JPanel actBox = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
         actBox.setOpaque(false);
         actBox.add(runBtn); actBox.add(cleanBtn); actBox.add(exportBtn);
         JPanel actRow = new JPanel(new BorderLayout());
@@ -104,12 +111,13 @@ public class ImportPanel extends JPanel {
         split.setContinuousLayout(true);
 
         Card historyCard = new Card("历史导入记录");
-        historyTable = new JTable(new DefaultTableModel(
+        historyModel = new DefaultTableModel(
                 new Object[]{"时间", "数据源", "类型", "大小", "成功", "跳过", "失败", "耗时"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
-        });
+        };
+        historyTable = new JTable(historyModel);
         UiUtil.styleTable(historyTable);
-        seedHistory((DefaultTableModel) historyTable.getModel());
+        seedHistory(historyModel);
         historyCard.body(new JScrollPane(historyTable));
         historyCard.setPreferredSize(new Dimension(0, 220));
 
@@ -118,14 +126,19 @@ public class ImportPanel extends JPanel {
     }
 
     private void seedHistory(DefaultTableModel m) {
-        m.addRow(new Object[]{"2026-06-09 16:11", "data.zip",         "ZIP", "528 MB", "—", "—", "—", "已解压"});
+        m.addRow(new Object[]{"2026-06-09 16:11", "data.zip", "ZIP", "528 MB", "—", "—", "—", "已解压"});
         m.addRow(new Object[]{"等待真实数据接入", "—", "—", "—", "—", "—", "—", "—"});
     }
 
-    public JProgressBar progressBar() { return progress; }
-    public JLabel currentFileLabel()  { return currentFile; }
-    public JLabel speedLabel()        { return speedLabel; }
-    public StatCard successCard()     { return cardSuccess; }
-    public StatCard skipCard()        { return cardSkip; }
-    public StatCard failCard()        { return cardFail; }
+    public void addHistoryRow(String time, String name, String type,
+                              String size, int ok, int skip, int fail, String elapsed) {
+        historyModel.insertRow(0, new Object[]{time, name, type, size, ok, skip, fail, elapsed});
+    }
+
+    public JProgressBar progressBar()  { return progress; }
+    public JLabel currentFileLabel()   { return currentFile; }
+    public JLabel speedLabel()         { return speedLabel; }
+    public StatCard successCard()      { return cardSuccess; }
+    public StatCard skipCard()         { return cardSkip; }
+    public StatCard failCard()         { return cardFail; }
 }
