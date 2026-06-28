@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<<<<<<< HEAD
 <project xmlns="http://maven.apache.org/POM/4.0.0">
+=======
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+>>>>>>> origin/main
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.gkg</groupId>
     <artifactId>gkg-platform</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
+<<<<<<< HEAD
     <name>GKG Semantic Analysis Platform</name>
+=======
+>>>>>>> origin/main
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -15,6 +25,7 @@
     </properties>
 
     <dependencies>
+<<<<<<< HEAD
         <dependency>
             <groupId>com.formdev</groupId>
             <artifactId>flatlaf</artifactId>
@@ -26,17 +37,32 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.45.1.0</version>
         </dependency>
+=======
+        <!-- SQLite JDBC -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.44.1.0</version>
+        </dependency>
+
+        <!-- 连接池 -->
+>>>>>>> origin/main
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>5.1.0</version>
         </dependency>
 
+<<<<<<< HEAD
+=======
+        <!-- CSV/TSV解析 -->
+>>>>>>> origin/main
         <dependency>
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
             <version>5.9</version>
         </dependency>
+<<<<<<< HEAD
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
@@ -85,6 +111,14 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>2.0.12</version>
+=======
+
+        <!-- 日志 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.9</version>
+>>>>>>> origin/main
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -92,15 +126,52 @@
             <version>1.4.14</version>
         </dependency>
 
+<<<<<<< HEAD
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.10.2</version>
+=======
+        <!-- JFreeChart -->
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.4</version>
+        </dependency>
+
+        <!-- Weka -->
+        <dependency>
+            <groupId>nz.ac.waikato.cms.weka</groupId>
+            <artifactId>weka-stable</artifactId>
+            <version>3.8.6</version>
+        </dependency>
+
+        <!-- Excel导出 -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+
+        <!-- JSON -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.16.1</version>
+        </dependency>
+
+        <!-- 单元测试 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.1</version>
+>>>>>>> origin/main
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
+<<<<<<< HEAD
         <finalName>gkg-platform-${project.version}</finalName>
         <plugins>
             <plugin>
@@ -108,16 +179,27 @@
                 <version>3.2.5</version>
             </plugin>
             <plugin>
+=======
+        <plugins>
+            <plugin>
+>>>>>>> origin/main
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.5.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
+<<<<<<< HEAD
                         <goals><goal>shade</goal></goals>
                         <configuration>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>shaded</shadedClassifierName>
+=======
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+>>>>>>> origin/main
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>edu.gkg.App</mainClass>
@@ -129,4 +211,8 @@
             </plugin>
         </plugins>
     </build>
+<<<<<<< HEAD
 </project>
+=======
+</project>
+>>>>>>> origin/main
