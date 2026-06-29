@@ -1,11 +1,14 @@
 package edu.gkg.view;
 
 import edu.gkg.common.*;
+import edu.gkg.common.SharedRecords.ProgressTick;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class ImportPanel extends JPanel {
 
@@ -15,8 +18,12 @@ public class ImportPanel extends JPanel {
     private final StatCard       cardSuccess = new StatCard("成功",  Theme.SUCCESS, "✓").value("0");
     private final StatCard       cardSkip    = new StatCard("跳过",  Theme.WARN,    "!").value("0");
     private final StatCard       cardFail    = new StatCard("失败",  Theme.DANGER,  "✕").value("0");
-    private final JTable         historyTable;
-    private final DefaultTableModel historyModel;
+
+    // ===== 在线下载 =====
+    public final DatePickerField datePicker    = new DatePickerField(LocalDate.now().minusDays(1));
+    public final JLabel          destPathLabel = UiUtil.mutedLabel("data/gkg-raw/YYYYMMDD/");
+    public final JButton         downloadBtn   = UiUtil.primaryButton("▼ 下载该日期数据");
+    public final JCheckBox       autoImportCb  = new JCheckBox("下载完成后自动导入", true);
 
     // 暴露给 ImportController 绑定
     public final JButton  runBtn    = UiUtil.primaryButton("▶ 开始导入");
@@ -24,12 +31,51 @@ public class ImportPanel extends JPanel {
     public final JButton  exportBtn = UiUtil.secondaryButton("结果导出");
     public final JButton  stopBtn   = UiUtil.secondaryButton("停止导入");
     public final DropZone drop;
+    public final JTable   historyTable;
+    public final DefaultTableModel historyModel;
 
     public ImportPanel() {
         setLayout(new BorderLayout(Theme.SPACE_LG, Theme.SPACE_LG));
         setBackground(Theme.BG_APP);
         setBorder(BorderFactory.createEmptyBorder(
                 Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG));
+
+        datePicker.setOnChange(d -> {
+            destPathLabel.setText("data/gkg-raw/" +
+                    d.format(DateTimeFormatter.BASIC_ISO_DATE) + "/");
+        });
+        String initPath = "data/gkg-raw/" +
+                datePicker.getSelectedDate().format(DateTimeFormatter.BASIC_ISO_DATE) + "/";
+        destPathLabel.setText(initPath);
+
+        autoImportCb.setOpaque(false);
+        autoImportCb.setFont(Theme.FONT_DEFAULT);
+        autoImportCb.setForeground(Theme.TEXT_PRIMARY);
+
+        // ===== 在线下载 Card =====
+        Card downloadCard = new Card("在线下载 GKG 数据");
+        JPanel dlRow1 = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
+        dlRow1.setOpaque(false);
+        dlRow1.add(UiUtil.mutedLabel("选择日期")); dlRow1.add(datePicker);
+
+        JPanel dlRow2 = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
+        dlRow2.setOpaque(false);
+        dlRow2.add(UiUtil.mutedLabel("保存到")); dlRow2.add(destPathLabel);
+
+        JPanel dlRow3 = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
+        dlRow3.setOpaque(false);
+        dlRow3.add(downloadBtn); dlRow3.add(autoImportCb);
+
+        JPanel dlBody = new JPanel();
+        dlBody.setOpaque(false);
+        dlBody.setLayout(new BoxLayout(dlBody, BoxLayout.Y_AXIS));
+        dlRow1.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dlRow2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dlRow3.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dlBody.add(dlRow1); dlBody.add(Box.createVerticalStrut(Theme.SPACE_SM));
+        dlBody.add(dlRow2); dlBody.add(Box.createVerticalStrut(Theme.SPACE_MD));
+        dlBody.add(dlRow3);
+        downloadCard.body(dlBody);
 
         JPanel left = new JPanel(new BorderLayout(0, Theme.SPACE_LG));
         left.setOpaque(false);
@@ -84,9 +130,12 @@ public class ImportPanel extends JPanel {
         JPanel leftCenter = new JPanel();
         leftCenter.setOpaque(false);
         leftCenter.setLayout(new BoxLayout(leftCenter, BoxLayout.Y_AXIS));
+        downloadCard.setAlignmentX(Component.LEFT_ALIGNMENT);
         dropCard.setAlignmentX(Component.LEFT_ALIGNMENT);
         progCard.setAlignmentX(Component.LEFT_ALIGNMENT);
         actionCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        leftCenter.add(downloadCard);
+        leftCenter.add(Box.createVerticalStrut(Theme.SPACE_LG));
         leftCenter.add(dropCard);
         leftCenter.add(Box.createVerticalStrut(Theme.SPACE_LG));
         leftCenter.add(progCard);
@@ -111,11 +160,11 @@ public class ImportPanel extends JPanel {
         split.setContinuousLayout(true);
 
         Card historyCard = new Card("历史导入记录");
-        historyModel = new DefaultTableModel(
-                new Object[]{"时间", "数据源", "类型", "大小", "成功", "跳过", "失败", "耗时"}, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
-        historyTable = new JTable(historyModel);
+        historyTable = new JTable(
+                historyModel = new DefaultTableModel(
+                        new Object[]{"时间", "数据源", "类型", "大小", "成功", "跳过", "失败", "耗时"}, 0) {
+                    @Override public boolean isCellEditable(int r, int c) { return false; }
+                });
         UiUtil.styleTable(historyTable);
         seedHistory(historyModel);
         historyCard.body(new JScrollPane(historyTable));

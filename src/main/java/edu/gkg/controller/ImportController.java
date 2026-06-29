@@ -110,7 +110,7 @@ public class ImportController {
         });
     }
 
-    private void startImport(File file) {
+    public void startImport(File file) {
         setButtons(false);
         panel.progressBar().setValue(0);
         panel.currentFileLabel().setText("当前文件：" + file.getName());

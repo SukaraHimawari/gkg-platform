@@ -60,4 +60,12 @@ public final class SharedRecords {
     public record ThemeHeat(String themeCode, String bucket, int count) {}
 
     public record Cluster(int clusterId, List<String> keywords, int recordCount) {}
+
+    // ===== 在线下载 =====
+
+    /** 一次在线下载结果汇总 */
+    public record DownloadResult(int total, int success, int failed, long elapsedMs) {}
+
+    /** 下载/导入进度回调单元 */
+    public record ProgressTick(int percent, String currentFile, String message) {}
 }

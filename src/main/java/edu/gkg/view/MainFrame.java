@@ -1,9 +1,12 @@
 package edu.gkg.view;
 
 import edu.gkg.controller.AnalysisController;
+import edu.gkg.controller.DownloadController;
 import edu.gkg.controller.ImportController;
 import edu.gkg.controller.QueryController;
+import edu.gkg.service.AnalysisService;
 import edu.gkg.service.QueryService;
+import edu.gkg.service.impl.AnalysisServiceImpl;
 import edu.gkg.service.impl.ExportServiceImpl;
 import edu.gkg.service.impl.ImportServiceImpl;
 import edu.gkg.service.impl.QueryServiceImpl;
@@ -36,11 +39,13 @@ public class MainFrame extends JFrame {
         ImportServiceImpl importService = new ImportServiceImpl();
         ExportServiceImpl exportService = new ExportServiceImpl();
         QueryService      queryService  = new QueryServiceImpl();
+        AnalysisService   analysisService = new AnalysisServiceImpl();
 
         // 注入 Controller（完成事件绑定）
-        new ImportController(importPanel, importService, exportService);
+        ImportController importCtrl = new ImportController(importPanel, importService, exportService);
         new QueryController(queryPanel, queryService, exportService);
-        new AnalysisController(analysisPanel, queryService);
+        new AnalysisController(analysisPanel, queryService, analysisService);
+        new DownloadController(importPanel, importCtrl);
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(Theme.FONT_DEFAULT);

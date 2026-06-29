@@ -32,6 +32,13 @@
             <version>3.45.1.0</version>
         </dependency>
 
+        <!-- 连接池 -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+
         <!-- CSV/TSV 解析 -->
         <dependency>
             <groupId>com.opencsv</groupId>
