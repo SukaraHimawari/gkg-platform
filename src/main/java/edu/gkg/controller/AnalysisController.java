@@ -48,8 +48,11 @@ public class AnalysisController {
         // F-14: 主题热度
         panel.runHeatButton.addActionListener(e -> runThemeHeat());
 
-        // F-15: K-Means 聚类
-        panel.runKMeansButton.addActionListener(e -> runKMeans());
+        // F-15: K-Means 聚类 — 待重写
+        panel.runKMeansButton.addActionListener(e ->
+                JOptionPane.showMessageDialog(panel,
+                        "主题聚类功能等待重写。",
+                        "提示", JOptionPane.INFORMATION_MESSAGE));
 
         // F-16: 情感趋势
         panel.runSentButton.addActionListener(e -> runSentiment());
@@ -184,39 +187,6 @@ public class AnalysisController {
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(panel,
                             "主题热度分析失败：" + ex.getMessage(),
-                            "错误", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        };
-        w.execute();
-    }
-
-    private void runKMeans() {
-        int k = (int) panel.kSpinner.getValue();
-        panel.runKMeansButton.setEnabled(false);
-
-        SwingWorker<List<String>, Void> w = new SwingWorker<>() {
-            @Override protected List<String> doInBackground() {
-                return analysisService.clusterByKMeans(k, 100);
-            }
-            @Override protected void done() {
-                panel.runKMeansButton.setEnabled(true);
-                try {
-                    List<String> result = get();
-                    StringBuilder sb = new StringBuilder("K-Means 聚类结果 (k=" + k + ")：\n\n");
-                    for (String line : result) {
-                        sb.append(line).append("\n");
-                    }
-                    JTextArea textArea = new JTextArea(sb.toString());
-                    textArea.setEditable(false);
-                    textArea.setFont(new java.awt.Font("Microsoft YaHei", java.awt.Font.PLAIN, 13));
-                    JScrollPane scrollPane = new JScrollPane(textArea);
-                    scrollPane.setPreferredSize(new java.awt.Dimension(500, 350));
-                    JOptionPane.showMessageDialog(panel, scrollPane,
-                            "聚类结果", JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(panel,
-                            "聚类失败：" + ex.getMessage(),
                             "错误", JOptionPane.ERROR_MESSAGE);
                 }
             }
