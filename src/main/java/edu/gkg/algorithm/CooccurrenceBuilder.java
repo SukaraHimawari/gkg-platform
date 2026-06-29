@@ -1,138 +1,154 @@
 package edu.gkg.algorithm;
 
 import edu.gkg.common.DbHelper;
+import edu.gkg.service.ProgressListener;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CooccurrenceBuilder {
 
     private static final int MAX_ENTITIES_PER_NEWS = 20;
+    private static final int BATCH_SIZE = 2000;
 
     public void rebuild() throws SQLException {
-        System.out.println("🔄 开始构建共现网络...");
-        long startTime = System.currentTimeMillis();
-
-        clearCooccurrence();
-
-        Map<String, List<EntityRef>> newsEntities = loadNewsEntities();
-        System.out.println("📊 加载了 " + newsEntities.size() + " 条新闻的实体");
-
-        Map<String, Integer> cooccurCount = new HashMap<>();
-        int processed = 0;
-
-        for (Map.Entry<String, List<EntityRef>> entry : newsEntities.entrySet()) {
-            List<EntityRef> entities = entry.getValue();
-            if (entities.size() < 2) continue;
-
-            if (entities.size() > MAX_ENTITIES_PER_NEWS) {
-                entities = entities.subList(0, MAX_ENTITIES_PER_NEWS);
-            }
-
-            for (int i = 0; i < entities.size(); i++) {
-                for (int j = i + 1; j < entities.size(); j++) {
-                    String key = makeKey(entities.get(i), entities.get(j));
-                    cooccurCount.put(key, cooccurCount.getOrDefault(key, 0) + 1);
-                }
-            }
-
-            processed++;
-            if (processed % 1000 == 0) {
-                System.out.println("  已处理 " + processed + " 条新闻");
-            }
-        }
-
-        System.out.println("✅ 计算完成，共 " + cooccurCount.size() + " 对共现");
-
-        saveEdges(cooccurCount);
-
-        long elapsed = System.currentTimeMillis() - startTime;
-        System.out.println("✅ 共现网络构建完成！耗时 " + elapsed / 1000 + " 秒");
+        rebuild(null);
     }
 
-    private void clearCooccurrence() throws SQLException {
-        try (Connection conn = DbHelper.getConnection();
-             Statement stmt = conn.createStatement()) {
+    public void rebuild(ProgressListener listener) throws SQLException {
+        long startTime = System.currentTimeMillis();
+        update(listener, 0, "正在清空旧共现网络");
+
+        try (Connection conn = DbHelper.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                clearCooccurrence(conn);
+                long totalRecords = countRecordsWithEntities(conn);
+                int[] counters = new int[2];
+                List<EntityRef> current = new ArrayList<>();
+                String[] currentRecord = new String[1];
+
+                try (PreparedStatement query = conn.prepareStatement(entitySql());
+                     PreparedStatement upsert = conn.prepareStatement(upsertSql());
+                     ResultSet rs = query.executeQuery()) {
+                    while (rs.next()) {
+                        String recordId = rs.getString("record_id");
+                        if (currentRecord[0] != null && !currentRecord[0].equals(recordId)) {
+                            addPairs(current, upsert, counters);
+                            reportProgress(listener, counters[0], totalRecords, startTime);
+                            current.clear();
+                        }
+                        currentRecord[0] = recordId;
+                        if (current.size() < MAX_ENTITIES_PER_NEWS) {
+                            current.add(new EntityRef(rs.getLong("entity_id"), rs.getString("type")));
+                        }
+                    }
+                    if (currentRecord[0] != null) {
+                        addPairs(current, upsert, counters);
+                        reportProgress(listener, counters[0], totalRecords, startTime);
+                    }
+                    upsert.executeBatch();
+                }
+                conn.commit();
+                update(listener, 100, "共现网络构建完成，处理 " + counters[0] + " 条新闻，生成/累加 "
+                        + counters[1] + " 对关系");
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
+    private void clearCooccurrence(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate("DELETE FROM cooccurrence");
         }
-        System.out.println("✅ 清空旧共现数据");
     }
 
-    private Map<String, List<EntityRef>> loadNewsEntities() throws SQLException {
-        Map<String, List<EntityRef>> result = new HashMap<>();
-
+    private long countRecordsWithEntities(Connection conn) throws SQLException {
         String sql = """
-            SELECT
-                record_id,
-                'PERSON' as type,
-                person_id as entity_id
-            FROM record_person
-
-            UNION ALL
-
-            SELECT
-                record_id,
-                'ORGANIZATION' as type,
-                org_id as entity_id
-            FROM record_organization
-            """;
-
-        try (Connection conn = DbHelper.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                String recordId = rs.getString("record_id");
-                String type = rs.getString("type");
-                Long entityId = rs.getLong("entity_id");
-
-                result.computeIfAbsent(recordId, k -> new ArrayList<>())
-                        .add(new EntityRef(entityId, type));
-            }
-        }
-
-        return result;
-    }
-
-    private String makeKey(EntityRef e1, EntityRef e2) {
-        if (e1.id < e2.id || (e1.id.equals(e2.id) && e1.type.compareTo(e2.type) < 0)) {
-            return e1.id + "|" + e1.type + "|" + e2.id + "|" + e2.type;
-        } else {
-            return e2.id + "|" + e2.type + "|" + e1.id + "|" + e1.type;
+                SELECT COUNT(*) FROM (
+                    SELECT record_id FROM record_person
+                    UNION
+                    SELECT record_id FROM record_organization
+                )
+                """;
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            return rs.next() ? rs.getLong(1) : 0L;
         }
     }
 
-    private void saveEdges(Map<String, Integer> cooccurCount) throws SQLException {
-        String sql = "INSERT OR IGNORE INTO cooccurrence (e1_id, e1_type, e2_id, e2_type, co_count) VALUES (?, ?, ?, ?, ?)";
+    private String entitySql() {
+        return """
+                SELECT record_id, type, entity_id
+                FROM (
+                    SELECT record_id, 'PERSON' AS type, person_id AS entity_id, char_offset
+                    FROM record_person
+                    UNION ALL
+                    SELECT record_id, 'ORGANIZATION' AS type, org_id AS entity_id, char_offset
+                    FROM record_organization
+                )
+                ORDER BY record_id, char_offset, type, entity_id
+                """;
+    }
 
-        try (Connection conn = DbHelper.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            conn.setAutoCommit(false);
+    private String upsertSql() {
+        return """
+                INSERT INTO cooccurrence (e1_id, e1_type, e2_id, e2_type, co_count)
+                VALUES (?, ?, ?, ?, 1)
+                ON CONFLICT(e1_id, e1_type, e2_id, e2_type)
+                DO UPDATE SET co_count = co_count + 1
+                """;
+    }
 
-            int count = 0;
-            for (Map.Entry<String, Integer> entry : cooccurCount.entrySet()) {
-                String[] parts = entry.getKey().split("\\|");
-                if (parts.length != 4) continue;
-
-                stmt.setLong(1, Long.parseLong(parts[0]));
-                stmt.setString(2, parts[1]);
-                stmt.setLong(3, Long.parseLong(parts[2]));
-                stmt.setString(4, parts[3]);
-                stmt.setInt(5, entry.getValue());
+    private void addPairs(List<EntityRef> entities, PreparedStatement stmt, int[] counters) throws SQLException {
+        counters[0]++;
+        if (entities.size() < 2) return;
+        for (int i = 0; i < entities.size(); i++) {
+            for (int j = i + 1; j < entities.size(); j++) {
+                EntityPair pair = ordered(entities.get(i), entities.get(j));
+                if (pair.left().equals(pair.right())) continue;
+                stmt.setLong(1, pair.left().id());
+                stmt.setString(2, pair.left().type());
+                stmt.setLong(3, pair.right().id());
+                stmt.setString(4, pair.right().type());
                 stmt.addBatch();
-
-                count++;
-                if (count % 1000 == 0) {
+                counters[1]++;
+                if (counters[1] % BATCH_SIZE == 0) {
                     stmt.executeBatch();
                 }
             }
-            stmt.executeBatch();
-            conn.commit();
-            conn.setAutoCommit(true);
         }
+    }
 
-        System.out.println("✅ 保存 " + cooccurCount.size() + " 条边到数据库");
+    private EntityPair ordered(EntityRef a, EntityRef b) {
+        int byType = a.type().compareTo(b.type());
+        if (byType < 0 || (byType == 0 && a.id() <= b.id())) {
+            return new EntityPair(a, b);
+        }
+        return new EntityPair(b, a);
+    }
+
+    private void reportProgress(ProgressListener listener, int processed, long total, long startTime) {
+        if (listener == null || processed % 500 != 0) return;
+        int pct = total <= 0 ? 90 : (int) Math.min(99, 5 + processed * 90 / total);
+        long elapsedSec = Math.max(1, (System.currentTimeMillis() - startTime) / 1000);
+        update(listener, pct, "已处理 " + processed + "/" + total + " 条新闻，速度 "
+                + (processed / elapsedSec) + " 条/秒");
+    }
+
+    private void update(ProgressListener listener, int pct, String message) {
+        if (listener != null) listener.onProgress(Math.max(0, Math.min(100, pct)), message);
     }
 
     public record EntityRef(Long id, String type) {}
+    private record EntityPair(EntityRef left, EntityRef right) {}
 }

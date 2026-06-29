@@ -3,34 +3,44 @@ package edu.gkg.common;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 public class DbHelper {
 
-    private static final HikariDataSource DATA_SOURCE;
+    private static HikariDataSource dataSource;
 
-    static {
+    private static synchronized void configure(String jdbcUrl) throws SQLException {
+        close();
+        createParentDirectoryIfNeeded(jdbcUrl);
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(jdbcUrl);
+        config.setMaximumPoolSize(1);
+        config.setMinimumIdle(1);
+        config.setConnectionTimeout(60000);
+        config.setIdleTimeout(600000);
+        config.setAutoCommit(true);
+        config.addDataSourceProperty("busy_timeout", "30000");
+
+        dataSource = new HikariDataSource(config);
+        createTablesIfNotExists();
+    }
+
+    private static void createParentDirectoryIfNeeded(String jdbcUrl) throws SQLException {
+        if (!jdbcUrl.startsWith("jdbc:sqlite:")) return;
+        String pathText = jdbcUrl.substring("jdbc:sqlite:".length());
+        if (":memory:".equals(pathText)) return;
+        Path parent = Paths.get(pathText).toAbsolutePath().getParent();
+        if (parent == null) return;
         try {
-            Files.createDirectories(Paths.get("db"));
-
-            HikariConfig config = new HikariConfig();
-            config.setJdbcUrl("jdbc:sqlite:db/gkg.db");
-            config.setMaximumPoolSize(5);
-            config.setConnectionTimeout(60000);
-            config.setIdleTimeout(600000);
-            config.setAutoCommit(true);
-
-            DATA_SOURCE = new HikariDataSource(config);
-            System.out.println("✅ 数据库连接池初始化成功");
-
-            createTablesIfNotExists();
-
+            Files.createDirectories(parent);
         } catch (Exception e) {
-            throw new RuntimeException("初始化数据库失败", e);
+            throw new SQLException("Failed to create database directory: " + parent, e);
         }
     }
 
@@ -81,6 +91,7 @@ public class DbHelper {
                 PRIMARY KEY(record_id, person_id)
             );
             CREATE INDEX IF NOT EXISTS idx_rp_person ON record_person(person_id);
+            CREATE INDEX IF NOT EXISTS idx_rp_record ON record_person(record_id);
 
             CREATE TABLE IF NOT EXISTS record_organization (
                 record_id TEXT,
@@ -89,6 +100,7 @@ public class DbHelper {
                 PRIMARY KEY(record_id, org_id)
             );
             CREATE INDEX IF NOT EXISTS idx_ro_org ON record_organization(org_id);
+            CREATE INDEX IF NOT EXISTS idx_ro_record ON record_organization(record_id);
 
             CREATE TABLE IF NOT EXISTS record_theme (
                 record_id TEXT,
@@ -97,6 +109,7 @@ public class DbHelper {
                 PRIMARY KEY(record_id, theme_id)
             );
             CREATE INDEX IF NOT EXISTS idx_rt_theme ON record_theme(theme_id);
+            CREATE INDEX IF NOT EXISTS idx_rt_record ON record_theme(record_id);
 
             CREATE TABLE IF NOT EXISTS record_location (
                 record_id TEXT,
@@ -104,6 +117,7 @@ public class DbHelper {
                 char_offset INTEGER,
                 PRIMARY KEY(record_id, location_id)
             );
+            CREATE INDEX IF NOT EXISTS idx_rl_record ON record_location(record_id);
 
             CREATE TABLE IF NOT EXISTS quote (
                 quote_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,6 +139,7 @@ public class DbHelper {
                 co_count INTEGER,
                 PRIMARY KEY(e1_id, e1_type, e2_id, e2_type)
             );
+            CREATE INDEX IF NOT EXISTS idx_cooccurrence_count ON cooccurrence(co_count DESC);
             """;
 
         try (Connection conn = getConnection();
@@ -134,20 +149,29 @@ public class DbHelper {
                     stmt.execute(s.trim());
                 }
             }
-            System.out.println("✅ 数据库表初始化成功");
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Failed to initialize database schema", e);
         }
     }
 
-    public static Connection getConnection() throws SQLException {
-        return DATA_SOURCE.getConnection();
+    public static synchronized Connection getConnection() throws SQLException {
+        if (dataSource == null || dataSource.isClosed()) {
+            configure("jdbc:sqlite:" + System.getProperty("gkg.db.path", "db/gkg.db"));
+        }
+        return dataSource.getConnection();
     }
 
-    public static void close() {
-        if (DATA_SOURCE != null && !DATA_SOURCE.isClosed()) {
-            DATA_SOURCE.close();
-            System.out.println("✅ 数据库连接池已关闭");
+    public static synchronized void useDatabaseForTests(Path dbPath) {
+        try {
+            configure("jdbc:sqlite:" + dbPath.toAbsolutePath());
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to switch test database", e);
+        }
+    }
+
+    public static synchronized void close() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
         }
     }
 }

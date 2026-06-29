@@ -28,8 +28,8 @@ public class DropZone extends JPanel {
         browseBtn.setForeground(Color.WHITE);
         browseBtn.setFocusPainted(false);
 
-        JLabel icon = new JLabel("⤓");
-        icon.setFont(new Font(Theme.FONT_FAMILY, Font.PLAIN, 40));
+        JLabel icon = new JLabel("UPLOAD");
+        icon.setFont(new Font(Theme.FONT_FAMILY, Font.BOLD, 18));
         icon.setForeground(Theme.BRAND);
 
         JLabel title = new JLabel("拖拽文件或文件夹到此处");

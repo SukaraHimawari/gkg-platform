@@ -1,6 +1,11 @@
 package edu.gkg.view;
 
-import edu.gkg.common.*;
+import edu.gkg.common.Card;
+import edu.gkg.common.SharedRecords.DateTone;
+import edu.gkg.common.SharedRecords.RelatedItem;
+import edu.gkg.common.StatCard;
+import edu.gkg.common.Theme;
+import edu.gkg.common.UiUtil;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -16,44 +21,49 @@ import org.jfree.data.time.TimeSeriesCollection;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.List;
 
 public class QueryPanel extends JPanel {
 
-    // ---------- 组合查询控件（供 QueryController 绑定）----------
-    public final JTextField dateFromField   = new JTextField("2024-01-15");
-    public final JTextField dateToField     = new JTextField("2024-01-15");
-    public final JTextField themeCodeField  = new JTextField();
-    public final JTextField personNameField = new JTextField();
-    public final JTextField orgNameField    = new JTextField();
-    public final JTextField locationNameField = new JTextField();
-    public final JButton    searchButton    = UiUtil.primaryButton("搜索");
-    public final JButton    resetButton     = UiUtil.secondaryButton("重置");
-    public final JButton    exportButton    = UiUtil.secondaryButton("导出结果");
+    public final JTextField dateFromField = new JTextField();
+    public final JTextField dateToField = new JTextField();
+    public final JTextField themeCodeField = new JTextField();
+    public final AutoSuggestTextField personNameField = new AutoSuggestTextField();
+    public final AutoSuggestTextField orgNameField = new AutoSuggestTextField();
+    public final AutoSuggestTextField locationNameField = new AutoSuggestTextField();
+    public final ThemeTrackPanel themeTrackPanel = new ThemeTrackPanel();
+    public final JButton searchButton = UiUtil.primaryButton("查询");
+    public final JButton resetButton = UiUtil.secondaryButton("重置");
+    public final JButton exportButton = UiUtil.secondaryButton("导出结果");
     public final DefaultTableModel resultTableModel = new DefaultTableModel(
             new Object[]{"记录ID", "发布时间", "媒体", "情感", "URL"}, 0) {
         @Override public boolean isCellEditable(int r, int c) { return false; }
     };
-    public final JLabel  pageLabel  = new JLabel("第 1 页 / 共 1 页");
-    public final JButton prevButton = UiUtil.secondaryButton("« 上一页");
-    public final JButton nextButton = UiUtil.secondaryButton("下一页 »");
+    public final JLabel pageLabel = new JLabel("第 1 页 / 共 1 页");
+    public final JButton prevButton = UiUtil.secondaryButton("上一页");
+    public final JButton nextButton = UiUtil.secondaryButton("下一页");
 
-    // ---------- 人物/组织档案控件（供 QueryController 绑定）----------
-    public final JTextField personSearchField  = new JTextField("Elon Musk", 24);
-    public final JButton    personSearchButton = UiUtil.primaryButton("查询");
-    public final JTextField orgSearchField     = new JTextField("Tesla", 24);
-    public final JButton    orgSearchButton    = UiUtil.primaryButton("查询");
+    public final AutoSuggestTextField personSearchField = new AutoSuggestTextField();
+    public final JButton personSearchButton = UiUtil.primaryButton("查询");
+    public final AutoSuggestTextField orgSearchField = new AutoSuggestTextField();
+    public final JButton orgSearchButton = UiUtil.primaryButton("查询");
 
-    // 人物档案 StatCard
-    public final StatCard personNewsCard  = new StatCard("新闻量",     Theme.BRAND,   "#").value("—");
-    public final StatCard personToneCard  = new StatCard("平均情感",   Theme.SUCCESS, "+").value("—");
-    public final StatCard personThemeCard = new StatCard("关联主题",   Theme.WARN,    "T").value("—");
-    public final StatCard personRatioCard = new StatCard("正向报道比", Theme.BRAND,   "%").value("—");
+    public final StatCard personNewsCard = new StatCard("新闻量", Theme.BRAND, "#").value("-");
+    public final StatCard personToneCard = new StatCard("平均情感", Theme.SUCCESS, "+").value("-");
+    public final StatCard personThemeCard = new StatCard("关联主题", Theme.WARN, "T").value("-");
+    public final StatCard personRatioCard = new StatCard("正向报道比", Theme.BRAND, "%").value("-");
 
-    // 组织档案 StatCard
-    public final StatCard orgNewsCard  = new StatCard("新闻量",     Theme.BRAND,   "#").value("—");
-    public final StatCard orgToneCard  = new StatCard("平均情感",   Theme.SUCCESS, "+").value("—");
-    public final StatCard orgThemeCard = new StatCard("关联主题",   Theme.WARN,    "T").value("—");
-    public final StatCard orgRatioCard = new StatCard("正向报道比", Theme.BRAND,   "%").value("—");
+    public final StatCard orgNewsCard = new StatCard("新闻量", Theme.BRAND, "#").value("-");
+    public final StatCard orgToneCard = new StatCard("平均情感", Theme.SUCCESS, "+").value("-");
+    public final StatCard orgThemeCard = new StatCard("关联主题", Theme.WARN, "T").value("-");
+    public final StatCard orgRatioCard = new StatCard("正向报道比", Theme.BRAND, "%").value("-");
+
+    private final DefaultCategoryDataset personOrgDataset = new DefaultCategoryDataset();
+    private final DefaultCategoryDataset personPeopleDataset = new DefaultCategoryDataset();
+    private final TimeSeries personTimelineSeries = new TimeSeries("新闻量");
+    private final DefaultCategoryDataset orgPeopleDataset = new DefaultCategoryDataset();
+    private final DefaultCategoryDataset orgOrgDataset = new DefaultCategoryDataset();
+    private final TimeSeries orgTimelineSeries = new TimeSeries("新闻量");
 
     public QueryPanel() {
         setLayout(new BorderLayout());
@@ -62,14 +72,13 @@ public class QueryPanel extends JPanel {
         JTabbedPane sub = new JTabbedPane();
         sub.setFont(Theme.FONT_DEFAULT);
         sub.putClientProperty("JTabbedPane.tabType", "underlined");
-        sub.addTab("组合查询",  buildSearchTab());
-        sub.addTab("人物档案",  buildPersonTab());
-        sub.addTab("组织档案",  buildOrgTab());
-        sub.addTab("主题追踪",  new ThemeTrackPanel());
+        sub.addTab("组合查询", buildSearchTab());
+        sub.addTab("人物档案", buildPersonTab());
+        sub.addTab("组织档案", buildOrgTab());
+        sub.addTab("主题追踪", themeTrackPanel);
         add(sub, BorderLayout.CENTER);
     }
 
-    // ---------- 组合查询 ----------
     private JComponent buildSearchTab() {
         JPanel wrap = new JPanel(new BorderLayout(Theme.SPACE_LG, Theme.SPACE_LG));
         wrap.setBackground(Theme.BG_APP);
@@ -79,12 +88,12 @@ public class QueryPanel extends JPanel {
         Card cond = new Card("查询条件");
         JPanel grid = new JPanel(new GridLayout(2, 6, Theme.SPACE_SM, Theme.SPACE_SM));
         grid.setOpaque(false);
-        grid.add(UiUtil.mutedLabel("起始日期")); grid.add(dateFromField);
+        grid.add(UiUtil.mutedLabel("开始日期")); grid.add(dateFromField);
         grid.add(UiUtil.mutedLabel("结束日期")); grid.add(dateToField);
         grid.add(UiUtil.mutedLabel("主题代码")); grid.add(themeCodeField);
-        grid.add(UiUtil.mutedLabel("人物名"));   grid.add(personNameField);
-        grid.add(UiUtil.mutedLabel("组织名"));   grid.add(orgNameField);
-        grid.add(UiUtil.mutedLabel("地点名"));   grid.add(locationNameField);
+        grid.add(UiUtil.mutedLabel("人物名")); grid.add(personNameField);
+        grid.add(UiUtil.mutedLabel("组织名")); grid.add(orgNameField);
+        grid.add(UiUtil.mutedLabel("地点名")); grid.add(locationNameField);
 
         JPanel condBody = new JPanel(new BorderLayout(0, Theme.SPACE_MD));
         condBody.setOpaque(false);
@@ -112,23 +121,15 @@ public class QueryPanel extends JPanel {
         resBody.add(pager, BorderLayout.SOUTH);
         resultCard.body(resBody);
 
-        wrap.add(cond,       BorderLayout.NORTH);
+        wrap.add(cond, BorderLayout.NORTH);
         wrap.add(resultCard, BorderLayout.CENTER);
         return wrap;
     }
 
-    // ---------- 人物档案 ----------
     private JComponent buildPersonTab() {
-        JPanel wrap = new JPanel(new BorderLayout(Theme.SPACE_LG, Theme.SPACE_LG));
-        wrap.setBackground(Theme.BG_APP);
-        wrap.setBorder(BorderFactory.createEmptyBorder(
-                Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG));
-
-        Card searchCard = new Card("人物搜索");
-        JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
-        searchRow.setOpaque(false);
-        searchRow.add(personSearchField);
-        searchRow.add(personSearchButton);
+        JPanel wrap = profileWrap();
+        Card searchCard = new Card("人物查询");
+        JPanel searchRow = searchRow(personSearchField, personSearchButton);
         searchCard.body(searchRow);
 
         JPanel statsRow = new JPanel(new GridLayout(1, 4, Theme.SPACE_LG, 0));
@@ -141,51 +142,21 @@ public class QueryPanel extends JPanel {
         Card relCard = new Card("关联关系 TOP10");
         JPanel rel = new JPanel(new GridLayout(1, 2, Theme.SPACE_LG, 0));
         rel.setOpaque(false);
-        rel.add(buildTopBar("关联组织 TOP10",
-                new String[]{"SpaceX", "Tesla", "X (Twitter)", "Neuralink", "OpenAI",
-                        "The Boring Co", "PayPal", "SolarCity", "NASA", "Korea Co."},
-                new double[]{2432, 2087, 1235, 985, 770, 645, 623, 498, 431, 412}));
-        rel.add(buildTopBar("关联人物 TOP10",
-                new String[]{"Donald Trump", "Jeff Bezos", "Mark Zuckerberg", "Larry Page",
-                        "Sergey Brin", "Tim Cook", "Jack Dorsey", "Bill Gates", "Sam Altman", "Kimbal Musk"},
-                new double[]{1982, 1256, 1103, 987, 875, 711, 623, 511, 431, 389}));
+        rel.add(buildTopBar("关联组织 TOP10", personOrgDataset));
+        rel.add(buildTopBar("关联人物 TOP10", personPeopleDataset));
         relCard.body(rel);
 
-        Card timelineCard = new Card("时间分布（按月）");
-        timelineCard.body(buildMiniTimeChart());
-
-        JPanel center = new JPanel();
-        center.setOpaque(false);
-        center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
-        statsRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        relCard.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timelineCard.setAlignmentX(Component.LEFT_ALIGNMENT);
-        center.add(statsRow);
-        center.add(Box.createVerticalStrut(Theme.SPACE_LG));
-        center.add(relCard);
-        center.add(Box.createVerticalStrut(Theme.SPACE_LG));
-        center.add(timelineCard);
-
+        Card timelineCard = new Card("时间分布");
+        timelineCard.body(buildMiniTimeChart(personTimelineSeries));
+        wrap.add(profileCenter(statsRow, relCard, timelineCard), BorderLayout.CENTER);
         wrap.add(searchCard, BorderLayout.NORTH);
-        wrap.add(new JScrollPane(center, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER) {{
-            setBorder(null); setOpaque(false); getViewport().setOpaque(false);
-        }}, BorderLayout.CENTER);
         return wrap;
     }
 
-    // ---------- 组织档案 ----------
     private JComponent buildOrgTab() {
-        JPanel wrap = new JPanel(new BorderLayout(Theme.SPACE_LG, Theme.SPACE_LG));
-        wrap.setBackground(Theme.BG_APP);
-        wrap.setBorder(BorderFactory.createEmptyBorder(
-                Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG));
-
-        Card searchCard = new Card("组织搜索");
-        JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
-        searchRow.setOpaque(false);
-        searchRow.add(orgSearchField);
-        searchRow.add(orgSearchButton);
+        JPanel wrap = profileWrap();
+        Card searchCard = new Card("组织查询");
+        JPanel searchRow = searchRow(orgSearchField, orgSearchButton);
         searchCard.body(searchRow);
 
         JPanel statsRow = new JPanel(new GridLayout(1, 4, Theme.SPACE_LG, 0));
@@ -198,20 +169,35 @@ public class QueryPanel extends JPanel {
         Card relCard = new Card("关联关系 TOP10");
         JPanel rel = new JPanel(new GridLayout(1, 2, Theme.SPACE_LG, 0));
         rel.setOpaque(false);
-        rel.add(buildTopBar("关联人物 TOP10",
-                new String[]{"Elon Musk", "Tim Cook", "Satya Nadella", "Andy Jassy",
-                        "Jensen Huang", "Lisa Su", "Sam Altman", "Sundar Pichai",
-                        "Mark Zuckerberg", "Jeff Bezos"},
-                new double[]{1850, 1230, 1100, 980, 870, 760, 650, 580, 520, 450}));
-        rel.add(buildTopBar("关联组织 TOP10",
-                new String[]{"Apple", "Microsoft", "Google", "Amazon", "Meta",
-                        "NVIDIA", "OpenAI", "IBM", "Intel", "Oracle"},
-                new double[]{2100, 1950, 1800, 1650, 1400, 1200, 900, 750, 600, 500}));
+        rel.add(buildTopBar("关联人物 TOP10", orgPeopleDataset));
+        rel.add(buildTopBar("关联组织 TOP10", orgOrgDataset));
         relCard.body(rel);
 
-        Card timelineCard = new Card("时间分布（按月）");
-        timelineCard.body(buildMiniTimeChart());
+        Card timelineCard = new Card("时间分布");
+        timelineCard.body(buildMiniTimeChart(orgTimelineSeries));
+        wrap.add(profileCenter(statsRow, relCard, timelineCard), BorderLayout.CENTER);
+        wrap.add(searchCard, BorderLayout.NORTH);
+        return wrap;
+    }
 
+    private JPanel profileWrap() {
+        JPanel wrap = new JPanel(new BorderLayout(Theme.SPACE_LG, Theme.SPACE_LG));
+        wrap.setBackground(Theme.BG_APP);
+        wrap.setBorder(BorderFactory.createEmptyBorder(
+                Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG));
+        return wrap;
+    }
+
+    private JPanel searchRow(JTextField field, JButton button) {
+        field.setColumns(24);
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_SM, 0));
+        row.setOpaque(false);
+        row.add(field);
+        row.add(button);
+        return row;
+    }
+
+    private JScrollPane profileCenter(JPanel statsRow, Card relCard, Card timelineCard) {
         JPanel center = new JPanel();
         center.setOpaque(false);
         center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
@@ -224,17 +210,48 @@ public class QueryPanel extends JPanel {
         center.add(Box.createVerticalStrut(Theme.SPACE_LG));
         center.add(timelineCard);
 
-        wrap.add(searchCard, BorderLayout.NORTH);
-        wrap.add(new JScrollPane(center, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+        return new JScrollPane(center, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER) {{
-            setBorder(null); setOpaque(false); getViewport().setOpaque(false);
-        }}, BorderLayout.CENTER);
-        return wrap;
+            setBorder(null);
+            setOpaque(false);
+            getViewport().setOpaque(false);
+        }};
     }
 
-    private ChartPanel buildTopBar(String title, String[] cats, double[] vals) {
-        DefaultCategoryDataset ds = new DefaultCategoryDataset();
-        for (int i = 0; i < cats.length; i++) ds.addValue(vals[i], "频次", cats[i]);
+    public void renderPersonProfileCharts(List<RelatedItem> organizations,
+                                          List<RelatedItem> people,
+                                          List<DateTone> timeline) {
+        fillRelatedDataset(personOrgDataset, organizations);
+        fillRelatedDataset(personPeopleDataset, people);
+        fillTimeline(personTimelineSeries, timeline);
+    }
+
+    public void renderOrgProfileCharts(List<RelatedItem> people,
+                                       List<RelatedItem> organizations,
+                                       List<DateTone> timeline) {
+        fillRelatedDataset(orgPeopleDataset, people);
+        fillRelatedDataset(orgOrgDataset, organizations);
+        fillTimeline(orgTimelineSeries, timeline);
+    }
+
+    private void fillRelatedDataset(DefaultCategoryDataset dataset, List<RelatedItem> items) {
+        dataset.clear();
+        if (items == null) return;
+        for (RelatedItem item : items) {
+            dataset.addValue(item.count(), "数量", item.name());
+        }
+    }
+
+    private void fillTimeline(TimeSeries series, List<DateTone> timeline) {
+        series.clear();
+        if (timeline == null) return;
+        for (DateTone point : timeline) {
+            series.addOrUpdate(new Day(point.date().getDayOfMonth(), point.date().getMonthValue(), point.date().getYear()),
+                    point.recordCount());
+        }
+    }
+
+    private ChartPanel buildTopBar(String title, DefaultCategoryDataset ds) {
         JFreeChart chart = ChartFactory.createBarChart(
                 title, null, null, ds, PlotOrientation.HORIZONTAL, false, true, false);
         chart.setBackgroundPaint(Theme.BG_CARD);
@@ -258,10 +275,7 @@ public class QueryPanel extends JPanel {
         return cp;
     }
 
-    private ChartPanel buildMiniTimeChart() {
-        TimeSeries ts = new TimeSeries("新闻量");
-        int[] vals = {800, 1200, 1500, 1100, 1800, 2400, 2900, 3200, 2800, 3500, 4100, 3800};
-        for (int m = 0; m < 12; m++) ts.addOrUpdate(new Day(1, m + 1, 2024), vals[m]);
+    private ChartPanel buildMiniTimeChart(TimeSeries ts) {
         TimeSeriesCollection coll = new TimeSeriesCollection();
         coll.addSeries(ts);
         JFreeChart chart = ChartFactory.createTimeSeriesChart(

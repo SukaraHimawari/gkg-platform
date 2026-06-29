@@ -3,6 +3,7 @@ package edu.gkg.view;
 import edu.gkg.common.Card;
 import edu.gkg.common.Theme;
 import edu.gkg.common.UiUtil;
+import edu.gkg.view.chart.ClusterResultsPanel;
 import edu.gkg.view.chart.CooccurNetworkPanel;
 import edu.gkg.view.chart.SentimentDashboard;
 import edu.gkg.view.chart.ThemeHeatmap;
@@ -12,26 +13,27 @@ import java.awt.*;
 
 public class AnalysisPanel extends JPanel {
 
-    private final CardLayout         cards     = new CardLayout();
-    private final JPanel             rightPane = new JPanel(cards);
+    private final CardLayout cards = new CardLayout();
+    private final JPanel rightPane = new JPanel(cards);
 
-    // 图表（供 AnalysisController 调用 render 方法）
     public final CooccurNetworkPanel network = new CooccurNetworkPanel();
-    public final ThemeHeatmap        heatmap = new ThemeHeatmap();
-    public final SentimentDashboard  dash    = new SentimentDashboard();
+    public final ThemeHeatmap heatmap = new ThemeHeatmap();
+    public final ClusterResultsPanel clusters = new ClusterResultsPanel();
+    public final SentimentDashboard dash = new SentimentDashboard();
 
-    // 控制参数（供 AnalysisController 读取）
-    public final JSlider            topNSlider      = new JSlider(10, 200, 50);
-    public final JButton            rebuildButton   = UiUtil.primaryButton("构建 / 刷新");
-    public final JButton            runPRButton     = UiUtil.primaryButton("运行 PageRank");
-    public final JComboBox<String>  granCombo       = new JComboBox<>(new String[]{"按日", "按周", "按月"});
-    public final JComboBox<String>  rangeCombo      = new JComboBox<>(new String[]{"最近 7 天", "最近 30 天", "最近 6 个月"});
-    public final JButton            runHeatButton   = UiUtil.primaryButton("运行热度分析");
-    public final JSpinner           kSpinner        = new JSpinner(new SpinnerNumberModel(5, 2, 20, 1));
-    public final JButton            runKMeansButton = UiUtil.primaryButton("运行聚类");
-    public final JComboBox<String>  entityTypeCombo = new JComboBox<>(new String[]{"人物", "组织", "主题"});
-    public final JTextField         entityNameField = new JTextField("Elon Musk");
-    public final JButton            runSentButton   = UiUtil.primaryButton("运行分析");
+    public final JSlider topNSlider = new JSlider(10, 200, 50);
+    public final JButton rebuildButton = UiUtil.primaryButton("构建 / 刷新");
+    public final JButton runPRButton = UiUtil.primaryButton("运行 PageRank");
+    public final JComboBox<String> granCombo = new JComboBox<>(new String[]{"按日", "按周", "按月"});
+    public final JComboBox<String> rangeCombo = new JComboBox<>(new String[]{"最近 7 天", "最近 30 天", "最近 6 个月", "全部数据"});
+    public final JButton runHeatButton = UiUtil.primaryButton("运行热度分析");
+    public final JSpinner kSpinner = new JSpinner(new SpinnerNumberModel(5, 2, 20, 1));
+    public final JButton runKMeansButton = UiUtil.primaryButton("运行聚类");
+    public final JComboBox<String> entityTypeCombo = new JComboBox<>(new String[]{"人物", "组织", "主题"});
+    public final AutoSuggestTextField entityNameField = new AutoSuggestTextField();
+    public final JButton runSentButton = UiUtil.primaryButton("运行分析");
+    public final JProgressBar progressBar = new JProgressBar(0, 100);
+    public final JLabel statusLabel = UiUtil.mutedLabel("就绪");
 
     public AnalysisPanel() {
         setLayout(new BorderLayout(Theme.SPACE_LG, Theme.SPACE_LG));
@@ -40,16 +42,17 @@ public class AnalysisPanel extends JPanel {
                 Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG, Theme.SPACE_LG));
 
         rightPane.setOpaque(false);
+        rightPane.add(wrap(network), "network");
+        rightPane.add(wrap(heatmap), "heatmap");
+        rightPane.add(wrap(clusters), "cluster");
+        rightPane.add(wrap(dash), "sentiment");
         Card rightCard = new Card();
-        rightPane.add(wrap(network),  "network");
-        rightPane.add(wrap(heatmap),  "heatmap");
-        rightPane.add(wrap(dash),     "sentiment");
         rightCard.body(rightPane);
 
-        // 默认切换为 CardLayout（不调用服务，只切换视图）
         rebuildButton.addActionListener(e -> cards.show(rightPane, "network"));
-        runPRButton.addActionListener(e   -> cards.show(rightPane, "network"));
+        runPRButton.addActionListener(e -> cards.show(rightPane, "network"));
         runHeatButton.addActionListener(e -> cards.show(rightPane, "heatmap"));
+        runKMeansButton.addActionListener(e -> cards.show(rightPane, "cluster"));
         runSentButton.addActionListener(e -> cards.show(rightPane, "sentiment"));
 
         JScrollPane leftScroll = new JScrollPane(buildLeftControlPanel(),
@@ -58,13 +61,13 @@ public class AnalysisPanel extends JPanel {
         leftScroll.setBorder(null);
         leftScroll.setOpaque(false);
         leftScroll.getViewport().setOpaque(false);
-        leftScroll.setPreferredSize(new Dimension(280, 0));
+        leftScroll.setPreferredSize(new Dimension(300, 0));
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftScroll, rightCard);
         split.setBorder(null);
         split.setOpaque(false);
         split.setDividerSize(Theme.SPACE_LG);
-        split.setDividerLocation(280);
+        split.setDividerLocation(300);
         split.setContinuousLayout(true);
         add(split, BorderLayout.CENTER);
     }
@@ -81,15 +84,17 @@ public class AnalysisPanel extends JPanel {
         container.setOpaque(false);
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
 
-        container.add(sectionCard("F-12 共现网络",  buildRebuildSection()));
+        container.add(sectionCard("F-12 共现网络", buildRebuildSection()));
         container.add(Box.createVerticalStrut(Theme.SPACE_MD));
-        container.add(sectionCard("F-13 PageRank ⭐", buildPageRankSection()));
+        container.add(sectionCard("F-13 PageRank 热点", buildPageRankSection()));
         container.add(Box.createVerticalStrut(Theme.SPACE_MD));
-        container.add(sectionCard("F-14 主题热度",  buildHeatSection()));
+        container.add(sectionCard("F-14 主题热度", buildHeatSection()));
         container.add(Box.createVerticalStrut(Theme.SPACE_MD));
-        container.add(sectionCard("F-15 主题聚类",  buildClusterSection()));
+        container.add(sectionCard("F-15 主题聚类", buildClusterSection()));
         container.add(Box.createVerticalStrut(Theme.SPACE_MD));
-        container.add(sectionCard("F-16 情感趋势 ⭐", buildSentSection()));
+        container.add(sectionCard("F-16 情感趋势", buildSentSection()));
+        container.add(Box.createVerticalStrut(Theme.SPACE_MD));
+        container.add(sectionCard("运行状态", buildStatusSection()));
         container.add(Box.createVerticalGlue());
         return container;
     }
@@ -131,6 +136,18 @@ public class AnalysisPanel extends JPanel {
                 runSentButton);
     }
 
-    /** 切换右侧显示的图表视图 */
-    public void showPanel(String name) { cards.show(rightPane, name); }
+    private JComponent buildStatusSection() {
+        progressBar.setStringPainted(true);
+        progressBar.setValue(0);
+        return UiUtil.vbox(statusLabel, progressBar);
+    }
+
+    public void showPanel(String name) {
+        cards.show(rightPane, name);
+    }
+
+    public void setBusy(String message, int progress) {
+        statusLabel.setText(message);
+        progressBar.setValue(Math.max(0, Math.min(100, progress)));
+    }
 }

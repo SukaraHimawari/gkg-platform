@@ -94,11 +94,11 @@ public class GdeltDownloader implements DownloadService {
                         try (InputStream is = resp.body();
                              OutputStream os = Files.newOutputStream(target)) { is.transferTo(os); }
                         tick(sink, idx + 1, total, filename,
-                                String.format("✓ %.1f MB", fileMb(target)));
+                                String.format("[OK] %.1f MB", fileMb(target)));
                         return Dl.OK;
                     } else if (code >= 400 && code < 500) {
                         LOG.warning(url + " → HTTP " + code);
-                        tick(sink, idx + 1, total, filename, "⚠ 404 文件不存在");
+                        tick(sink, idx + 1, total, filename, "[WARN] 404 文件不存在");
                         return Dl.NOT_FOUND;
                     } else {
                         LOG.warning(url + " → HTTP " + code + "，重试 " + attempt);
@@ -109,7 +109,7 @@ public class GdeltDownloader implements DownloadService {
             }
         }
         LOG.severe("所有镜像均失败：" + filename);
-        tick(sink, idx + 1, total, filename, "⚠ 网络错误，已跳过");
+        tick(sink, idx + 1, total, filename, "[WARN] 网络错误，已跳过");
         try { Files.deleteIfExists(target); } catch (IOException ignored) {}
         return Dl.ERR;
     }

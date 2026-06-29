@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 
 /**
  * 可弹出日历的日期选择控件。
- * 点击文本框或 ▼ 按钮弹出月历，点击日期格子即选中并关闭弹窗。
+ * 点击文本框或按钮弹出月历，点击日期格子即选中并关闭弹窗。
  */
 public class DatePickerField extends JPanel {
 
@@ -47,7 +47,7 @@ public class DatePickerField extends JPanel {
             @Override public void mouseClicked(MouseEvent e) { toggle(); }
         });
 
-        toggleBtn = new JButton("▼");
+        toggleBtn = new JButton("v");
         toggleBtn.setFont(new Font(Theme.FONT_FAMILY, Font.PLAIN, 11));
         toggleBtn.setFocusPainted(false);
         toggleBtn.setBackground(Theme.BG_CARD);

@@ -1,6 +1,5 @@
 package edu.gkg.view.chart;
 
-import edu.gkg.algorithm.SentimentTrend;
 import edu.gkg.common.SharedRecords.DateTone;
 import edu.gkg.common.SharedRecords.Inflection;
 import edu.gkg.common.SharedRecords.SentimentSeries;
@@ -23,9 +22,6 @@ import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SentimentDashboard extends JPanel {
 
@@ -52,8 +48,7 @@ public class SentimentDashboard extends JPanel {
         split.setDividerLocation(280);
         split.setResizeWeight(0.45);
         add(split, BorderLayout.CENTER);
-
-        renderSeries(sampleSeries(), "Elon Musk · 情感趋势（示例数据）");
+        radar.setValues(new double[]{0, 0, 0, 0, 0, 0});
     }
 
     private ChartPanel buildDial() {
@@ -84,7 +79,7 @@ public class SentimentDashboard extends JPanel {
         val.setOutlinePaint(Theme.BORDER_LIGHT);
         plot.addLayer(val);
 
-        JFreeChart chart = new JFreeChart("V2Tone 总情感", plot);
+        JFreeChart chart = new JFreeChart("V2Tone 情感", plot);
         chart.setBackgroundPaint(Theme.BG_CARD);
         chart.setBorderVisible(false);
         chart.getTitle().setFont(Theme.FONT_SECTION);
@@ -97,7 +92,7 @@ public class SentimentDashboard extends JPanel {
 
     private ChartPanel buildTrendChart() {
         JFreeChart chart = ChartFactory.createTimeSeriesChart(
-                "情感趋势 + 拐点", null, null, trendDataset, false, true, false);
+                "情感趋势", null, null, trendDataset, false, true, false);
         TrendLineChart.applyTheme(chart);
         trendPlot = (XYPlot) chart.getPlot();
         ChartPanel cp = new ChartPanel(chart);
@@ -164,17 +159,9 @@ public class SentimentDashboard extends JPanel {
         return Math.max(0, Math.min(1, v / max));
     }
 
-    private static SentimentSeries sampleSeries() {
-        List<DateTone> rows = new ArrayList<>();
-        double[] vals = {2.1, 1.8, 2.3, 0.4, -1.2, -2.5, -3.1, -2.8, -1.5, 0.6, 1.9, 2.4, 2.1, 1.7};
-        LocalDate base = LocalDate.of(2024, 1, 1);
-        for (int i = 0; i < vals.length; i++) rows.add(new DateTone(base.plusDays(i), vals[i], 20));
-        return new SentimentTrend().compute(rows);
-    }
-
-    /** 自绘 6 轴雷达——新主题色板。 */
+    /** 自绘六轴情感雷达图。 */
     static class RadarPanel extends JPanel {
-        private double[] values = {0.6, 0.7, 0.3, 0.5, 0.4, 0.8};
+        private double[] values = {0, 0, 0, 0, 0, 0};
         private final String[] axes = {"均值", "正向", "负向", "波动", "拐点数", "峰值"};
 
         RadarPanel() {
@@ -197,7 +184,7 @@ public class SentimentDashboard extends JPanel {
 
             g.setFont(Theme.FONT_SECTION);
             g.setColor(Theme.TEXT_PRIMARY);
-            g.drawString("情感多维雷达", 4, 18);
+            g.drawString("情感雷达", 4, 18);
 
             int cx = w / 2, cy = h / 2 + 14;
             int r = Math.min(w, h) / 2 - 56;

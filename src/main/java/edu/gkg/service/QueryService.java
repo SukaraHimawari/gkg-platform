@@ -23,11 +23,16 @@ public interface QueryService {
     /** F-10 主题时序趋势 */
     List<DateTone> getThemeTrend(String themeCode, LocalDate from, LocalDate to);
 
+    List<DateTone> getEntityTrend(String entityType, String name, LocalDate from, LocalDate to);
+
     /** F-09 人物名前缀联想 */
     List<String> suggestPerson(String prefix, int limit);
 
     /** F-09 组织名前缀联想 */
     List<String> suggestOrg(String prefix, int limit);
+
+    /** 地点名模糊联想 */
+    List<String> suggestLocation(String prefix, int limit);
 
     /** 状态栏：数据库记录总数 */
     long countAll();

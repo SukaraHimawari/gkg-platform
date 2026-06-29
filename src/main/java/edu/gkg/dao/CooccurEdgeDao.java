@@ -73,6 +73,32 @@ public class CooccurEdgeDao {
         return list;
     }
 
+    public List<CooccurEdge> findTopEdges(int limit) throws SQLException {
+        List<CooccurEdge> list = new ArrayList<>();
+        String sql = """
+                SELECT e1_id, e1_type, e2_id, e2_type, co_count
+                FROM cooccurrence
+                ORDER BY co_count DESC
+                LIMIT ?
+                """;
+        try (Connection conn = DbHelper.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, Math.max(1, limit));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    CooccurEdge edge = new CooccurEdge();
+                    edge.setE1Id(rs.getLong("e1_id"));
+                    edge.setE1Type(rs.getString("e1_type"));
+                    edge.setE2Id(rs.getLong("e2_id"));
+                    edge.setE2Type(rs.getString("e2_type"));
+                    edge.setCoCount(rs.getInt("co_count"));
+                    list.add(edge);
+                }
+            }
+        }
+        return list;
+    }
+
     /**
      * 统计总边数
      */

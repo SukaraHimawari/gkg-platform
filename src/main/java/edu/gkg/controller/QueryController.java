@@ -31,6 +31,8 @@ public class QueryController {
     }
 
     private void wire() {
+        wireSuggestions();
+
         // 搜索按钮
         panel.searchButton.addActionListener(e -> doSearch(1));
 
@@ -91,17 +93,21 @@ public class QueryController {
         panel.personSearchButton.addActionListener(e -> {
             String name = panel.personSearchField.getText().trim();
             if (name.isEmpty()) return;
-            SwingWorker<EntityProfile, Void> w = new SwingWorker<>() {
-                @Override protected EntityProfile doInBackground() {
-                    return queryService.getPersonProfile(name);
+            SwingWorker<ProfileResult, Void> w = new SwingWorker<>() {
+                @Override protected ProfileResult doInBackground() {
+                    EntityProfile profile = queryService.getPersonProfile(name);
+                    List<DateTone> timeline = queryService.getEntityTrend("PERSON", name, null, null);
+                    return new ProfileResult(profile, timeline);
                 }
                 @Override protected void done() {
                     try {
-                        EntityProfile prof = get();
+                        ProfileResult result = get();
+                        EntityProfile prof = result.profile();
                         panel.personNewsCard.value(String.valueOf(prof.newsCount()));
                         panel.personToneCard.value(String.format("%.2f", prof.avgTone()));
                         panel.personThemeCard.value(String.valueOf(prof.themeCount()));
                         panel.personRatioCard.value("—");
+                        panel.renderPersonProfileCharts(prof.relatedOrganizations(), prof.relatedPeople(), result.timeline());
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(panel,
                                 "查询失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
@@ -115,17 +121,21 @@ public class QueryController {
         panel.orgSearchButton.addActionListener(e -> {
             String name = panel.orgSearchField.getText().trim();
             if (name.isEmpty()) return;
-            SwingWorker<EntityProfile, Void> w = new SwingWorker<>() {
-                @Override protected EntityProfile doInBackground() {
-                    return queryService.getOrgProfile(name);
+            SwingWorker<ProfileResult, Void> w = new SwingWorker<>() {
+                @Override protected ProfileResult doInBackground() {
+                    EntityProfile profile = queryService.getOrgProfile(name);
+                    List<DateTone> timeline = queryService.getEntityTrend("ORG", name, null, null);
+                    return new ProfileResult(profile, timeline);
                 }
                 @Override protected void done() {
                     try {
-                        EntityProfile prof = get();
+                        ProfileResult result = get();
+                        EntityProfile prof = result.profile();
                         panel.orgNewsCard.value(String.valueOf(prof.newsCount()));
                         panel.orgToneCard.value(String.format("%.2f", prof.avgTone()));
                         panel.orgThemeCard.value(String.valueOf(prof.themeCount()));
                         panel.orgRatioCard.value("—");
+                        panel.renderOrgProfileCharts(prof.relatedPeople(), prof.relatedOrganizations(), result.timeline());
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(panel,
                                 "查询失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
@@ -134,6 +144,16 @@ public class QueryController {
             };
             w.execute();
         });
+
+        panel.themeTrackPanel.plotButton.addActionListener(e -> plotThemeTrend());
+    }
+
+    private void wireSuggestions() {
+        panel.personNameField.setSuggestionProvider(prefix -> queryService.suggestPerson(prefix, 10));
+        panel.personSearchField.setSuggestionProvider(prefix -> queryService.suggestPerson(prefix, 10));
+        panel.orgNameField.setSuggestionProvider(prefix -> queryService.suggestOrg(prefix, 10));
+        panel.orgSearchField.setSuggestionProvider(prefix -> queryService.suggestOrg(prefix, 10));
+        panel.locationNameField.setSuggestionProvider(prefix -> queryService.suggestLocation(prefix, 10));
     }
 
     private void doSearch(int page) {
@@ -171,6 +191,31 @@ public class QueryController {
         w.execute();
     }
 
+    private void plotThemeTrend() {
+        String theme = panel.themeTrackPanel.themeCodeField.getText().trim();
+        if (theme.isEmpty()) return;
+        LocalDate from = parseDate(panel.themeTrackPanel.fromDateField.getText(), null);
+        LocalDate to = parseDate(panel.themeTrackPanel.toDateField.getText(), null);
+        String normalizedTheme = theme.toUpperCase(java.util.Locale.ROOT);
+        panel.themeTrackPanel.plotButton.setEnabled(false);
+        SwingWorker<List<DateTone>, Void> w = new SwingWorker<>() {
+            @Override protected List<DateTone> doInBackground() {
+                return queryService.getThemeTrend(normalizedTheme, from, to);
+            }
+
+            @Override protected void done() {
+                panel.themeTrackPanel.plotButton.setEnabled(true);
+                try {
+                    panel.themeTrackPanel.chart().renderFrequencySeries(normalizedTheme, get());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(panel,
+                            "查询失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        w.execute();
+    }
+
     private QueryCondition buildCondition() {
         LocalDate from = parseDate(panel.dateFromField.getText(), null);
         LocalDate to   = parseDate(panel.dateToField.getText(), null);
@@ -193,4 +238,6 @@ public class QueryController {
             return fallback;
         }
     }
+
+    private record ProfileResult(EntityProfile profile, List<DateTone> timeline) {}
 }

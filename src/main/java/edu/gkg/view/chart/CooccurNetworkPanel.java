@@ -38,7 +38,6 @@ public class CooccurNetworkPanel extends JPanel {
     public CooccurNetworkPanel() {
         setBackground(Theme.BG_CARD);
         setOpaque(true);
-        renderDemo();
         installInteractions();
     }
 
@@ -47,7 +46,11 @@ public class CooccurNetworkPanel extends JPanel {
         edges.clear();
         Map<Integer, Double> rankMap = new HashMap<>();
         Map<Integer, Integer> degMap = new HashMap<>();
-        for (FocusNode r : ranks) { rankMap.put(r.nodeId(), r.pageRank()); degMap.put(r.nodeId(), r.degree()); }
+        for (FocusNode r : ranks) {
+            rankMap.put(r.nodeId(), r.pageRank());
+            degMap.put(r.nodeId(), r.degree());
+            putNode(r.nodeId(), r.name(), r.pageRank(), r.degree());
+        }
         for (CooccurEdge e : edgeData) {
             putNode(e.e1Id(), e.e1Name(), rankMap.getOrDefault(e.e1Id(), 0.01), degMap.getOrDefault(e.e1Id(), 0));
             putNode(e.e2Id(), e.e2Name(), rankMap.getOrDefault(e.e2Id(), 0.01), degMap.getOrDefault(e.e2Id(), 0));
@@ -74,24 +77,6 @@ public class CooccurNetworkPanel extends JPanel {
     private double randomX() { return 200 + Math.random() * 600; }
     private double randomY() { return 150 + Math.random() * 400; }
 
-    private void renderDemo() {
-        String[] names = {"Biden", "Trump", "Xi", "Putin", "Zelensky", "Macron", "UN", "NATO", "EU", "G7"};
-        double[] ranks = {0.18, 0.16, 0.12, 0.11, 0.08, 0.07, 0.10, 0.08, 0.06, 0.04};
-        List<CooccurEdge> demoEdges = new ArrayList<>();
-        Random rand = new Random(42);
-        for (int i = 0; i < names.length; i++) {
-            for (int j = i + 1; j < names.length; j++) {
-                if (rand.nextDouble() < 0.35) {
-                    demoEdges.add(new CooccurEdge(i, names[i], j, names[j],
-                            (int) (5 + rand.nextDouble() * 30)));
-                }
-            }
-        }
-        List<FocusNode> demoRanks = new ArrayList<>();
-        for (int i = 0; i < names.length; i++) demoRanks.add(new FocusNode(i, names[i], ranks[i], 0));
-        render(demoEdges, demoRanks);
-    }
-
     private void layoutFruchtermanReingold() {
         int W = 1000, H = 700;
         int n = nodes.size();
@@ -102,7 +87,8 @@ public class CooccurNetworkPanel extends JPanel {
         double cool = t / (FR_ITER + 1);
 
         List<NodeView> arr = new ArrayList<>(nodes.values());
-        for (int iter = 0; iter < FR_ITER; iter++) {
+        int iterations = Math.max(20, Math.min(FR_ITER, 4000 / Math.max(1, n)));
+        for (int iter = 0; iter < iterations; iter++) {
             for (NodeView v : arr) { v.dx = 0; v.dy = 0; }
             for (int i = 0; i < n; i++) {
                 NodeView v = arr.get(i);
@@ -135,7 +121,7 @@ public class CooccurNetworkPanel extends JPanel {
                 v.x = Math.max(20, Math.min(W - 20, v.x));
                 v.y = Math.max(20, Math.min(H - 20, v.y));
             }
-            t -= cool;
+            t -= t / (iterations + 1);
         }
     }
 

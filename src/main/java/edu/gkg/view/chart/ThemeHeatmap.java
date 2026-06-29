@@ -15,7 +15,6 @@ import org.jfree.data.xy.DefaultXYZDataset;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ThemeHeatmap extends JPanel {
@@ -23,7 +22,6 @@ public class ThemeHeatmap extends JPanel {
     public ThemeHeatmap() {
         setLayout(new BorderLayout());
         setOpaque(false);
-        rebuild(sampleThemes(), sampleBuckets(), sampleMatrix());
     }
 
     public void rebuild(List<String> themes, List<String> buckets, double[][] heat) {
@@ -107,20 +105,4 @@ public class ThemeHeatmap extends JPanel {
         return new Color(r, g, bl);
     }
 
-    private static List<String> sampleThemes() {
-        return List.of("SANCTIONS", "PROTEST", "ELECTION", "HEALTH", "CYBER", "CLIMATE");
-    }
-    private static List<String> sampleBuckets() {
-        List<String> b = new ArrayList<>();
-        for (int h = 0; h < 24; h += 2) b.add(String.format("%02d:00", h));
-        return b;
-    }
-    private static double[][] sampleMatrix() {
-        int rows = 6, cols = 12;
-        double[][] m = new double[rows][cols];
-        for (int r = 0; r < rows; r++)
-            for (int c = 0; c < cols; c++)
-                m[r][c] = (Math.sin(r + c / 2.0) + 1.2) * (10 + r * 5);
-        return m;
-    }
 }

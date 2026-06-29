@@ -12,9 +12,9 @@ public class ThemeTrackPanel extends JPanel {
 
     private final TrendLineChart chart = new TrendLineChart();
 
-    public final JTextField themeCodeField = new JTextField("SANCTIONS", 16);
-    public final JTextField fromDateField  = new JTextField("2024-01-01", 10);
-    public final JTextField toDateField    = new JTextField("2024-12-31", 10);
+    public final JTextField themeCodeField = new JTextField(16);
+    public final JTextField fromDateField  = new JTextField(10);
+    public final JTextField toDateField    = new JTextField(10);
     public final JButton    plotButton     = UiUtil.primaryButton("绘制趋势");
 
     public ThemeTrackPanel() {
@@ -36,7 +36,6 @@ public class ThemeTrackPanel extends JPanel {
         formCard.body(form);
 
         Card chartCard = new Card("频次趋势");
-        chart.demoData();
         chartCard.body(chart);
 
         add(formCard, BorderLayout.NORTH);

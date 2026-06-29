@@ -33,7 +33,7 @@ public class MockDownloadService implements DownloadService {
                 int done = h * 4 + m / 15 + 1;
                 int pct  = done * 100 / TOTAL;
                 if (sink != null) sink.accept(new ProgressTick(pct,
-                        "下载中 " + done + "/" + TOTAL + ": " + fn, "✓ 模拟下载完成"));
+                        "下载中 " + done + "/" + TOTAL + ": " + fn, "[OK] 模拟下载完成"));
                 try { Thread.sleep(TICK_MS); }
                 catch (InterruptedException e) { Thread.currentThread().interrupt(); return new DownloadResult(TOTAL, ok, fail, System.currentTimeMillis() - t0); }
             }

@@ -45,7 +45,16 @@ public final class SharedRecords {
             long newsCount,
             double avgTone,
             int themeCount,
-            List<String> topRelated) {}
+            List<String> topRelated,
+            List<RelatedItem> relatedPeople,
+            List<RelatedItem> relatedOrganizations) {
+
+        public EntityProfile(String name, long newsCount, double avgTone, int themeCount, List<String> topRelated) {
+            this(name, newsCount, avgTone, themeCount, topRelated, List.of(), List.of());
+        }
+    }
+
+    public record RelatedItem(String name, int count) {}
 
     public record CooccurEdge(int e1Id, String e1Name, int e2Id, String e2Name, int coCount) {}
 

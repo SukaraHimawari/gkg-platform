@@ -21,6 +21,7 @@ public class MainFrame extends JFrame {
     private final JLabel statusLeft  = makeFooterLabel("数据库记录数：正在读取...");
     private final JLabel statusMid   = makeFooterLabel("图谱实体数：—");
     private final JLabel statusRight = makeFooterLabel("● 就绪");
+    private final QueryService queryService;
 
     public MainFrame() {
         super("GKG 全球新闻语义分析与主题追踪平台");
@@ -38,11 +39,11 @@ public class MainFrame extends JFrame {
         // 初始化服务
         ImportServiceImpl importService = new ImportServiceImpl();
         ExportServiceImpl exportService = new ExportServiceImpl();
-        QueryService      queryService  = new QueryServiceImpl();
+        queryService  = new QueryServiceImpl();
         AnalysisService   analysisService = new AnalysisServiceImpl();
 
         // 注入 Controller（完成事件绑定）
-        ImportController importCtrl = new ImportController(importPanel, importService, exportService);
+        ImportController importCtrl = new ImportController(importPanel, importService, exportService, this::refreshRecordCount);
         new QueryController(queryPanel, queryService, exportService);
         new AnalysisController(analysisPanel, queryService, analysisService);
         new DownloadController(importPanel, importCtrl);
@@ -62,7 +63,10 @@ public class MainFrame extends JFrame {
         add(buildStatusBar(), BorderLayout.SOUTH);
         getContentPane().setBackground(Theme.BG_APP);
 
-        // 异步刷新状态栏记录数
+        refreshRecordCount();
+    }
+
+    private void refreshRecordCount() {
         SwingWorker<Long, Void> counter = new SwingWorker<>() {
             @Override protected Long doInBackground() {
                 return queryService.countAll();

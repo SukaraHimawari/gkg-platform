@@ -51,17 +51,7 @@ public class TrendLineChart extends JPanel {
         dataset.addSeries(ts);
     }
 
-    public void demoData() {
-        TimeSeries freq = new TimeSeries("SANCTIONS 示例频次");
-        int[] vals = {12, 18, 15, 21, 28, 33, 26, 19, 22, 30, 41, 38, 29, 22};
-        for (int i = 0; i < vals.length; i++) {
-            freq.addOrUpdate(new Day(i + 1, 1, 2024), vals[i]);
-        }
-        dataset.removeAllSeries();
-        dataset.addSeries(freq);
-    }
-
-    /** 统一图表主题：白底卡片色 + 品牌色折线 + 中文字体 + 极简网格。 */
+    /** 统一图表主题：卡片背景、中文字体、品牌色折线和简洁网格。 */
     public static void applyTheme(JFreeChart chart) {
         chart.setBackgroundPaint(Theme.BG_CARD);
         chart.setBorderVisible(false);
@@ -103,6 +93,6 @@ public class TrendLineChart extends JPanel {
         }
     }
 
-    /** 向后兼容：原本叫 applyChineseFont 的接口保留。 */
+    /** 保留旧接口名，兼容已有调用。 */
     static void applyChineseFont(JFreeChart chart) { applyTheme(chart); }
 }
